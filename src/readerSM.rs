@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 
 pub fn read_input(filename: &str) -> Option<()> {
-    let file = File::open(filename).expect(format!("Could not read file {}", filename).as_str());
+    let file = File::open(filename).unwrap_or_else(|_| panic!("Could not read file {}", filename));
     let mut lines = BufReader::new(file).lines();
     // Corresponds to file info at top. We only care about number of jobs
     skip_lines(&mut lines, 5);
@@ -25,7 +25,7 @@ pub fn read_input(filename: &str) -> Option<()> {
         let modes_i = modes_per_activity.get_mut(i).unwrap();
         for _ in 0..n_modes {
             modes_i.push(modes.len());
-            modes.push((modes.len()));
+            modes.push(modes.len());
         }
         if line.len() > 3 {
             let successors_i = successors.get_mut(i).unwrap();
@@ -67,6 +67,14 @@ pub fn read_input(filename: &str) -> Option<()> {
     println!("{} jobs", n_activities);
     println!("{} resources", n_renewable);
     println!("horizon: {} ", horizon);
+    for (index, ant) in successors.into_iter().enumerate() {
+        for suc in ant {
+            println!("{} is suc of {}", suc + 1, index + 1);
+        }
+    }
+    for (index, cap) in capacity_per_renewable_resource.into_iter().enumerate() {
+        println!("Resource {} has cap {}", index + 1, cap)
+    }
     Some(())
 }
 
