@@ -1,3 +1,4 @@
+mod readerSM;
 fn main() {
-    println!("Hello, world!");
+    readerSM::read_input("data/datasets/j30.sm/j3010_0.sm");
 }

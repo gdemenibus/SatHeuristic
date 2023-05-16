@@ -7,8 +7,9 @@ pub fn read_input(filename: &str) -> Option<()> {
     // Corresponds to file info at top. We only care about number of jobs
     skip_lines(&mut lines, 5);
     let n_activities = get_number_of_activities(lines.next()?.ok()?);
-    skip_lines(&mut lines, 1);
+    //skip_lines(&mut lines, 2);
     let horizon = get_horizon(lines.next()?.ok()?);
+    skip_lines(&mut lines, 1);
     let n_renewable = get_number_of_resources(lines.next()?.ok()?);
     let n_nonrenewable = get_number_of_resources(lines.next()?.ok()?);
     skip_lines(&mut lines, 8);
@@ -47,16 +48,16 @@ pub fn read_input(filename: &str) -> Option<()> {
                 .unwrap(),
         );
         let resources_mode = resources_per_mode.get_mut(mode).unwrap();
-        for i in 0..n_renewable {
+        (0..n_renewable).for_each(|i| {
             resources_mode[i] = *line
                 .get(line.len() + i - n_nonrenewable - n_renewable)
                 .unwrap();
-        }
-        for i in n_renewable..(n_renewable + n_nonrenewable) {
+        });
+        (n_renewable..(n_renewable + n_nonrenewable)).for_each(|i| {
             resources_mode[i] = *line
                 .get(line.len() + i - n_nonrenewable - n_renewable)
                 .unwrap();
-        }
+        });
     }
 
     skip_lines(&mut lines, 3);
@@ -65,7 +66,7 @@ pub fn read_input(filename: &str) -> Option<()> {
     let capacity_per_nonrenewable_resource = line.get(n_renewable..).unwrap().to_vec();
     println!("{} jobs", n_activities);
     println!("{} resources", n_renewable);
-    println!("{} modes", n_modes);
+    println!("horizon: {} ", horizon);
     Some(())
 }
 
@@ -76,16 +77,15 @@ fn skip_lines(lines: &mut Lines<BufReader<File>>, n: u32) {
 }
 
 fn get_number_of_activities(line: String) -> usize {
-    line.split(":").nth(1).unwrap().trim().parse().unwrap()
+    line.split(':').nth(1).unwrap().trim().parse().unwrap()
 }
 
 fn get_number_of_resources(line: String) -> usize {
-    line.split(":")
+    line.split(':')
         .nth(1)
         .unwrap()
-        .trim()
         .split_whitespace()
-        .nth(0)
+        .next()
         .unwrap()
         .parse()
         .unwrap()
@@ -98,5 +98,6 @@ fn line_to_numbers(line: String) -> Vec<u32> {
 }
 
 fn get_horizon(line: String) -> usize {
-    line.split(":").nth(1).unwrap().trim().parse().unwrap()
+    println!("{}", line);
+    line.split(':').nth(1).unwrap().trim().parse().unwrap()
 }
