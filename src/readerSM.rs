@@ -4,10 +4,11 @@ use std::io::{BufRead, BufReader, Lines};
 pub fn read_input(filename: &str) -> Option<()> {
     let file = File::open(filename).expect(format!("Could not read file {}", filename).as_str());
     let mut lines = BufReader::new(file).lines();
-
+    // Corresponds to file info at top. We only care about number of jobs
     skip_lines(&mut lines, 5);
     let n_activities = get_number_of_activities(lines.next()?.ok()?);
-    skip_lines(&mut lines, 2);
+    skip_lines(&mut lines, 1);
+    let horizon = get_horizon(lines.next()?.ok()?);
     let n_renewable = get_number_of_resources(lines.next()?.ok()?);
     let n_nonrenewable = get_number_of_resources(lines.next()?.ok()?);
     skip_lines(&mut lines, 8);
@@ -62,7 +63,9 @@ pub fn read_input(filename: &str) -> Option<()> {
     let line = line_to_numbers(lines.next()?.ok()?);
     let capacity_per_renewable_resource = line.get(..n_renewable).unwrap().to_vec();
     let capacity_per_nonrenewable_resource = line.get(n_renewable..).unwrap().to_vec();
-
+    println!("{} jobs", n_activities);
+    println!("{} resources", n_renewable);
+    println!("{} modes", n_modes);
     Some(())
 }
 
@@ -92,4 +95,8 @@ fn line_to_numbers(line: String) -> Vec<u32> {
     line.split_whitespace()
         .map(|s| s.parse().unwrap())
         .collect()
+}
+
+fn get_horizon(line: String) -> usize {
+    line.split(":").nth(1).unwrap().trim().parse().unwrap()
 }
