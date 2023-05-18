@@ -1,5 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Segment {
     pub(crate) start_jiff: u32,
     pub(crate) duration: u32,
@@ -7,8 +8,7 @@ pub(crate) struct Segment {
     pub(crate) id: u64,
     pub(crate) parent_project: u64,
 }
-
-impl<'a> Segment {
+impl Segment {
     pub(crate) fn new(
         start_jiff: u32,
         duration: u32,
