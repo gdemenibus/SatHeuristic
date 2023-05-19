@@ -1,4 +1,6 @@
 pub mod project;
+
+mod id_generator;
 mod readerSM;
 mod segment;
 fn main() {
