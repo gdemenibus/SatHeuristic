@@ -40,11 +40,31 @@ impl<'a> Project<'a> {
                     .map(Rc::clone)
                     .filter(|old| old.start_jiff + old.duration == x)
                     .collect();
-                let seg = Segment::new(x, y, RefCell::new(precedents), id, self.id);
+                // TODO: This might change. Cloning might be too expensive
+                let resource = self.resource.clone();
+                let seg = Segment::new(x, y, RefCell::new(precedents), id, self.id, resource);
                 segments.push(Rc::new(seg));
             }
         }
         segments
+    }
+    pub(crate) fn get_last_segments(&self, segments: &Vec<Rc<Segment>>) -> Vec<Rc<Segment>> {
+        let last_segments = segments
+            .iter()
+            .map(Rc::clone)
+            .filter(|last| last.parent_project == self.id)
+            .filter(|last| last.start_jiff + last.duration == self.duration + 1)
+            .collect();
+        last_segments
+    }
+    pub(crate) fn get_first_segments(&self, segments: &Vec<Rc<Segment>>) -> Vec<Rc<Segment>> {
+        let first_segements = segments
+            .iter()
+            .map(Rc::clone)
+            .filter(|first| first.parent_project == self.id)
+            .filter(|first| first.start_jiff == 1)
+            .collect();
+        first_segements
     }
 }
 
@@ -78,5 +98,29 @@ mod tests {
         };
         let segments = projct.generate_segments();
         assert_eq!(segments.len(), (3 * 4) / 2);
+    }
+    #[test]
+    fn generate_first_seg_amount() {
+        let projct = Project {
+            duration: 3,
+            id: 1,
+            resource: vec![1],
+            precedence: Vec::new(),
+        };
+        let segments = projct.generate_segments();
+        let first_segements = projct.get_first_segments(&segments);
+        assert_eq!(first_segements.len(), 3);
+    }
+    #[test]
+    fn generate_last_seg_amount() {
+        let projct = Project {
+            duration: 3,
+            id: 1,
+            resource: vec![1],
+            precedence: Vec::new(),
+        };
+        let segments = projct.generate_segments();
+        let last_segments = projct.get_last_segments(&segments);
+        assert_eq!(last_segments.len(), 3);
     }
 }
