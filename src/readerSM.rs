@@ -106,6 +106,5 @@ fn line_to_numbers(line: String) -> Vec<u32> {
 }
 
 fn get_horizon(line: String) -> usize {
-    println!("{}", line);
     line.split(':').nth(1).unwrap().trim().parse().unwrap()
 }

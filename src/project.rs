@@ -1,5 +1,5 @@
 use crate::id_generator::IdGenerator;
-use crate::{id_generator, segment::Segment};
+use crate::segment::Segment;
 use std::{cell::RefCell, cmp::Ordering, rc::Rc};
 #[derive(Eq)]
 pub(crate) struct Project<'a> {
@@ -78,6 +78,13 @@ impl<'a> Project<'a> {
             .collect();
         first_segements
     }
+    pub(crate) fn link_with_precedents(&self) {
+        let our = self.get_first_segments();
+        for precedent in &self.precedence {
+            let theirs = precedent.get_last_segments();
+            Segment::precedence_link(&theirs, &our);
+        }
+    }
 }
 impl PartialEq for Project<'_> {
     fn eq(&self, other: &Self) -> bool {
@@ -94,6 +101,13 @@ impl Ord for Project<'_> {
         self.id.cmp(&other.id)
     }
 }
+impl Default for Project<'_> {
+    fn default() -> Self {
+        let mut id_gen = IdGenerator::default();
+        let resources = vec![1];
+        Project::new(1, 1, resources, Vec::new(), &mut id_gen)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -102,21 +116,40 @@ mod tests {
     #[test]
     fn generte_seg_correct_amount() {
         let mut id_gen = IdGenerator::default();
-        let projct = Project::new(1, 1, vec![1], Vec::new(), &mut id_gen);
+        let projct = Project::new(3, 1, vec![1], Vec::new(), &mut id_gen);
         assert_eq!(projct.segments.len(), (3 * 4) / 2);
     }
     #[test]
     fn generate_first_seg_amount() {
         let mut id_gen = IdGenerator::default();
-        let projct = Project::new(1, 1, vec![1], Vec::new(), &mut id_gen);
+        let projct = Project::new(3, 1, vec![1], Vec::new(), &mut id_gen);
         let first_segements = projct.get_first_segments();
         assert_eq!(first_segements.len(), 3);
     }
     #[test]
     fn generate_last_seg_amount() {
         let mut id_gen = IdGenerator::default();
-        let projct = Project::new(1, 1, vec![1], Vec::new(), &mut id_gen);
+        let projct = Project::new(3, 1, vec![1], Vec::new(), &mut id_gen);
         let last_segments = projct.get_last_segments();
         assert_eq!(last_segments.len(), 3);
+    }
+    #[test]
+    fn link_correctly() {
+        let project1 = Project::default();
+        let mut project2 = Project::default();
+        project2.add_presedence(&project1);
+        project2.link_with_precedents();
+        let project_2_first = project2.get_first_segments();
+        let project_1_last = project1.get_last_segments();
+
+        for segment_2_first in &project_2_first {
+            for segment_1_last in &project_1_last {
+                assert!(segment_2_first
+                    .precedence
+                    .clone()
+                    .into_inner()
+                    .contains(segment_1_last));
+            }
+        }
     }
 }

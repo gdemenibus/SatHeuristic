@@ -39,13 +39,13 @@ impl Segment {
             self.add_precedent(precedent);
         }
     }
-}
-
-fn precedence_link(last: &Vec<Rc<Segment>>, first: Vec<Rc<Segment>>) {
-    for f in first {
-        f.add_precedents(last);
+    pub(crate) fn precedence_link(last: &Vec<Rc<Segment>>, first: &Vec<Rc<Segment>>) {
+        for f in first {
+            f.add_precedents(last);
+        }
     }
 }
+
 #[cfg(test)]
 mod tests {
     use crate::segment::Segment;
