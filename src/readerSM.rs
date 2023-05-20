@@ -6,20 +6,20 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 
-pub fn read_input(filename: &str) -> Option<()> {
+pub(crate) fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Vec<&'a Project<'a>>> {
     let file = File::open(filename).unwrap_or_else(|_| panic!("Could not read file {}", filename));
     let mut lines = BufReader::new(file).lines();
     // Corresponds to file info at top. We only care about number of jobs
     skip_lines(&mut lines, 5);
     let n_activities = get_number_of_activities(lines.next()?.ok()?);
     //skip_lines(&mut lines, 2);
-    let horizon = get_horizon(lines.next()?.ok()?);
+    let _horizon = get_horizon(lines.next()?.ok()?);
     skip_lines(&mut lines, 1);
     let n_renewable = get_number_of_resources(lines.next()?.ok()?);
     let n_nonrenewable = get_number_of_resources(lines.next()?.ok()?);
     skip_lines(&mut lines, 8);
 
-    let activities: Vec<usize> = (0..n_activities).collect();
+    let activities: Vec<usize> = (1..n_activities + 1).collect();
     let mut modes: Vec<usize> = Vec::new();
     let mut modes_per_activity: Vec<Vec<usize>> = vec![Default::default(); n_activities];
     let mut successors: Vec<Vec<usize>> = vec![Default::default(); n_activities];
@@ -35,7 +35,7 @@ pub fn read_input(filename: &str) -> Option<()> {
         if line.len() > 3 {
             let successors_i = successors.get_mut(i).unwrap();
             for j in 3..line.len() {
-                successors_i.push((line.get(j).unwrap() - 1) as usize);
+                successors_i.push(*line.get(j).unwrap() as usize);
             }
         }
     }
@@ -69,21 +69,13 @@ pub fn read_input(filename: &str) -> Option<()> {
     let line = line_to_numbers(lines.next()?.ok()?);
     let capacity_per_renewable_resource = line.get(..n_renewable).unwrap().to_vec();
     let capacity_per_nonrenewable_resource = line.get(n_renewable..).unwrap().to_vec();
-    println!("{} jobs", n_activities);
-    println!("{} resources", n_renewable);
-    println!("horizon: {} ", horizon);
-    for (index, ant) in successors.into_iter().enumerate() {
-        for suc in ant {
-            println!("{} is suc of {}", suc + 1, index + 1);
-        }
-    }
-    for x in durations_per_mode {
-        println!("Duration: {}", x);
-    }
-    for (index, cap) in capacity_per_renewable_resource.into_iter().enumerate() {
-        println!("Resource {} has cap {}", index + 1, cap)
-    }
-    Some(())
+    Some(create_projects(
+        arena,
+        resources_per_mode,
+        successors,
+        activities,
+        durations_per_mode,
+    ))
 }
 fn create_projects(
     arena: &Bump,
@@ -108,17 +100,23 @@ fn create_projects(
     // Projects are sorted by ids
     projects.sort();
     connect_precedence(&projects, successors);
+    link_with_precedence(&projects);
     projects
 }
 fn connect_precedence<'a>(projects: &Vec<&'a Project<'a>>, successors: Vec<Vec<usize>>) {
     for (index, successors) in successors.into_iter().enumerate() {
         let precedent = projects.get(index).unwrap();
-        assert_eq!(precedent.id(), (index as u64) + 1);
         for successor in successors {
-            let suc = projects.get(successor).unwrap();
-            assert_eq!((successor as u64) + 1, suc.id());
+            //println!("Suc {} of {}", index + 1, successor);
+            // successor is based on the id's, not the index
+            let suc = projects.get(successor - 1).unwrap();
             suc.add_presedence(precedent);
         }
+    }
+}
+fn link_with_precedence<'a>(projects: &Vec<&'a Project<'a>>) {
+    for project in projects {
+        project.link_with_precedents();
     }
 }
 fn skip_lines(lines: &mut Lines<BufReader<File>>, n: u32) {
@@ -151,4 +149,45 @@ fn line_to_numbers(line: String) -> Vec<u32> {
 fn get_horizon(line: String) -> usize {
     println!("{}", line);
     line.split(':').nth(1).unwrap().trim().parse().unwrap()
+}
+#[cfg(test)]
+#[test]
+fn proj_creation_from_read() {
+    //Project of size 1, with no dependencies, and resource 1
+    let rsr = vec![vec![1]];
+    let act = vec![1];
+    let dep: Vec<Vec<usize>> = vec![vec![]];
+
+    let arena = Bump::new();
+
+    let created_project = create_projects(&arena, rsr, dep, act, vec![1])[0];
+    let expected_project = Project::new(
+        1,
+        1,
+        vec![1],
+        RefCell::new(Vec::new()),
+        &mut IdGenerator::default(),
+    );
+    //simpl test
+    assert_eq!(*created_project, expected_project);
+}
+#[test]
+fn proj_creation_three() {
+    // 1 -> 2 -> 3 (3 depends on 2, which depends on 1)
+    // all have same resource usage, which is vec1
+    let resources = vec![vec![1], vec![1], vec![1]];
+    let mut id_gen = IdGenerator::default();
+    let project1 = Project::new(1, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
+    let project2 = Project::new(1, 2, vec![1], RefCell::new(vec![&project1]), &mut id_gen);
+    let project3 = Project::new(1, 3, vec![1], RefCell::new(vec![&project2]), &mut id_gen);
+    let expected_projects = vec![&project1, &project2, &project3];
+
+    let arena = Bump::new();
+    let successors = vec![vec![2], vec![3], vec![]];
+    let projs = vec![1, 2, 3];
+    let durations = vec![1, 1, 1];
+    let generetad_projects = create_projects(&arena, resources, successors, projs, durations);
+    for generated in generetad_projects {
+        assert!(expected_projects.contains(&generated));
+    }
 }

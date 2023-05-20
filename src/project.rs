@@ -1,7 +1,8 @@
 use crate::id_generator::IdGenerator;
 use crate::segment::Segment;
-use std::{cell::RefCell, cmp::Ordering, rc::Rc};
-#[derive(Eq)]
+use core::fmt;
+use std::{cell::RefCell, cmp::Ordering, fmt::Display, rc::Rc};
+#[derive(Eq, Debug)]
 pub(crate) struct Project<'a> {
     duration: u32,
     id: u64,
@@ -81,7 +82,7 @@ impl<'a> Project<'a> {
     }
     pub(crate) fn link_with_precedents(&self) {
         let our = self.get_first_segments();
-        for precedent in &self.precedence.take() {
+        for precedent in &self.precedence.borrow().clone() {
             let theirs = precedent.get_last_segments();
             {
                 let last = &theirs;
@@ -95,6 +96,10 @@ impl<'a> Project<'a> {
 
     pub(crate) fn id(&self) -> u64 {
         self.id
+    }
+
+    pub(crate) fn precedence(&self) -> &RefCell<Vec<&'a Project<'a>>> {
+        &self.precedence
     }
 }
 impl PartialEq for Project<'_> {
@@ -117,6 +122,22 @@ impl Default for Project<'_> {
         let mut id_gen = IdGenerator::default();
         let resources = vec![1];
         Project::new(1, 1, resources, RefCell::new(Vec::new()), &mut id_gen)
+    }
+}
+impl Display for Project<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let press: Vec<u64> = self
+            .precedence
+            .borrow()
+            .clone()
+            .into_iter()
+            .map(|o| o.id())
+            .collect();
+        write!(
+            f,
+            "Project with ID: {} \nDuration: {}\n Resource: {:?}  \nPrecedents: {:?}\n",
+            self.id, self.duration, self.resource, press
+        )
     }
 }
 
