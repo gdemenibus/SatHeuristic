@@ -5,17 +5,18 @@ use std::{cell::RefCell, cmp::Ordering, rc::Rc};
 pub(crate) struct Project<'a> {
     duration: u32,
     id: u64,
-    resource: Vec<u64>,
-    precedence: Vec<&'a Project<'a>>,
+    resource: Vec<u32>,
+    precedence: RefCell<Vec<&'a Project<'a>>>,
     segments: Vec<Rc<Segment>>,
 }
 
 impl<'a> Project<'a> {
+    /// Creates a new [`Project`].
     pub(crate) fn new(
         duration: u32,
         id: u64,
-        resource: Vec<u64>,
-        precedence: Vec<&'a Project<'a>>,
+        resource: Vec<u32>,
+        precedence: RefCell<Vec<&'a Project<'a>>>,
         id_gen: &mut IdGenerator,
     ) -> Self {
         let segments = Project::generate_segments(id, id_gen, &resource, duration);
@@ -28,14 +29,14 @@ impl<'a> Project<'a> {
         }
     }
 
-    pub(crate) fn add_presedence(&mut self, other: &'a Project<'a>) {
-        self.precedence.push(other);
+    pub(crate) fn add_presedence(&self, other: &'a Project<'a>) {
+        self.precedence.borrow_mut().push(other);
     }
-    /// .
+    /// Generates the segments of a project with the following details
     pub(crate) fn generate_segments(
         parent_id: u64,
         id_gen: &mut IdGenerator,
-        parent_resource: &Vec<u64>,
+        parent_resource: &Vec<u32>,
         duration: u32,
     ) -> Vec<Rc<Segment>> {
         let mut segments: Vec<Rc<Segment>> = Vec::new();
@@ -80,10 +81,20 @@ impl<'a> Project<'a> {
     }
     pub(crate) fn link_with_precedents(&self) {
         let our = self.get_first_segments();
-        for precedent in &self.precedence {
+        for precedent in &self.precedence.take() {
             let theirs = precedent.get_last_segments();
-            Segment::precedence_link(&theirs, &our);
+            {
+                let last = &theirs;
+                let first = &our;
+                for f in first {
+                    f.add_precedents(last);
+                }
+            };
         }
+    }
+
+    pub(crate) fn id(&self) -> u64 {
+        self.id
     }
 }
 impl PartialEq for Project<'_> {
@@ -105,31 +116,33 @@ impl Default for Project<'_> {
     fn default() -> Self {
         let mut id_gen = IdGenerator::default();
         let resources = vec![1];
-        Project::new(1, 1, resources, Vec::new(), &mut id_gen)
+        Project::new(1, 1, resources, RefCell::new(Vec::new()), &mut id_gen)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
+
     use crate::{id_generator::IdGenerator, project::Project};
 
     #[test]
     fn generte_seg_correct_amount() {
         let mut id_gen = IdGenerator::default();
-        let projct = Project::new(3, 1, vec![1], Vec::new(), &mut id_gen);
+        let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
         assert_eq!(projct.segments.len(), (3 * 4) / 2);
     }
     #[test]
     fn generate_first_seg_amount() {
         let mut id_gen = IdGenerator::default();
-        let projct = Project::new(3, 1, vec![1], Vec::new(), &mut id_gen);
+        let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
         let first_segements = projct.get_first_segments();
         assert_eq!(first_segements.len(), 3);
     }
     #[test]
     fn generate_last_seg_amount() {
         let mut id_gen = IdGenerator::default();
-        let projct = Project::new(3, 1, vec![1], Vec::new(), &mut id_gen);
+        let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
         let last_segments = projct.get_last_segments();
         assert_eq!(last_segments.len(), 3);
     }

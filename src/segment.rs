@@ -4,12 +4,13 @@ use std::{cell::RefCell, rc::Rc};
 pub(crate) struct Segment {
     pub(crate) start_jiff: u32,
     pub(crate) duration: u32,
+    //TODO: Replace with HashSet to prevent duplicates
     pub(crate) precedence: RefCell<Vec<Rc<Segment>>>,
     pub(crate) id: u64,
     pub(crate) parent_project: u64,
     // TODO: Perhaps there is a better way to deal with this resource array
     // Investigate
-    pub(crate) resource: Vec<u64>,
+    pub(crate) resource: Vec<u32>,
 }
 impl Segment {
     pub(crate) fn new(
@@ -18,7 +19,7 @@ impl Segment {
         precedence: RefCell<Vec<Rc<Segment>>>,
         id: u64,
         parent_project: u64,
-        resource: Vec<u64>,
+        resource: Vec<u32>,
     ) -> Self {
         Self {
             start_jiff,
@@ -39,7 +40,7 @@ impl Segment {
             self.add_precedent(precedent);
         }
     }
-    pub(crate) fn precedence_link(last: &Vec<Rc<Segment>>, first: &Vec<Rc<Segment>>) {
+    fn precedence_link(last: &Vec<Rc<Segment>>, first: Vec<Rc<Segment>>) {
         for f in first {
             f.add_precedents(last);
         }

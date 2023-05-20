@@ -1,3 +1,8 @@
+use crate::id_generator::IdGenerator;
+use crate::project::Project;
+use bumpalo::Bump;
+use itertools::izip;
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 
@@ -72,12 +77,50 @@ pub fn read_input(filename: &str) -> Option<()> {
             println!("{} is suc of {}", suc + 1, index + 1);
         }
     }
+    for x in durations_per_mode {
+        println!("Duration: {}", x);
+    }
     for (index, cap) in capacity_per_renewable_resource.into_iter().enumerate() {
         println!("Resource {} has cap {}", index + 1, cap)
     }
     Some(())
 }
-
+fn create_projects(
+    arena: &Bump,
+    resources: Vec<Vec<u32>>,
+    successors: Vec<Vec<usize>>,
+    projs: Vec<usize>,
+    durations: Vec<u32>,
+) -> Vec<&Project<'_>> {
+    let mut projects: Vec<&Project> = Vec::new();
+    let mut id_gen = IdGenerator::default();
+    for (resource, proj, duration) in izip!(resources, projs, durations) {
+        let project = arena.alloc(Project::new(
+            duration,
+            proj as u64,
+            resource,
+            RefCell::new(Vec::new()),
+            &mut id_gen,
+        ));
+        projects.push(project);
+    }
+    // Ids start at 1 and vec starts at 0, so there is an ofset by one going on here
+    // Projects are sorted by ids
+    projects.sort();
+    connect_precedence(&projects, successors);
+    projects
+}
+fn connect_precedence<'a>(projects: &Vec<&'a Project<'a>>, successors: Vec<Vec<usize>>) {
+    for (index, successors) in successors.into_iter().enumerate() {
+        let precedent = projects.get(index).unwrap();
+        assert_eq!(precedent.id(), (index as u64) + 1);
+        for successor in successors {
+            let suc = projects.get(successor).unwrap();
+            assert_eq!((successor as u64) + 1, suc.id());
+            suc.add_presedence(precedent);
+        }
+    }
+}
 fn skip_lines(lines: &mut Lines<BufReader<File>>, n: u32) {
     for _ in 0..n {
         lines.next();
@@ -106,5 +149,6 @@ fn line_to_numbers(line: String) -> Vec<u32> {
 }
 
 fn get_horizon(line: String) -> usize {
+    println!("{}", line);
     line.split(':').nth(1).unwrap().trim().parse().unwrap()
 }
