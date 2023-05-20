@@ -11,6 +11,8 @@ fn main() {
     println!("file read successfully, got the following projects: ");
 
     for project in projects.unwrap() {
-        println!("{}", project);
+        for segment in project.segments() {
+            //println!("{}", segment);
+        }
     }
 }

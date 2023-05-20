@@ -1,4 +1,8 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    fmt::{self, Display},
+    rc::Rc,
+};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Segment {
@@ -44,6 +48,26 @@ impl Segment {
         for f in first {
             f.add_precedents(last);
         }
+    }
+
+    pub(crate) fn id(&self) -> u64 {
+        self.id
+    }
+}
+impl Display for Segment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let press: Vec<u64> = self
+            .precedence
+            .borrow()
+            .clone()
+            .into_iter()
+            .map(|o| o.id())
+            .collect();
+        write!(
+            f,
+            "Segment with ID: {} \nDuration: {}\n Resource: {:?}  \nPrecedents: {:?}\n",
+            self.id, self.duration, self.resource, press
+        )
     }
 }
 

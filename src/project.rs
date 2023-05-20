@@ -42,9 +42,10 @@ impl<'a> Project<'a> {
     ) -> Vec<Rc<Segment>> {
         let mut segments: Vec<Rc<Segment>> = Vec::new();
         //TODO: Replace this ID generation with a more distinct one
-        let id = id_gen.next_id();
+
         for x in 1..duration + 1 {
             for y in 1..duration - x + 2 {
+                let id = id_gen.next_id();
                 // find the precednece
                 // rule is: if x + y of old equal x of new, then new depends on old
                 let precedents = segments
@@ -101,6 +102,10 @@ impl<'a> Project<'a> {
     pub(crate) fn precedence(&self) -> &RefCell<Vec<&'a Project<'a>>> {
         &self.precedence
     }
+
+    pub(crate) fn segments(&self) -> &[Rc<Segment>] {
+        self.segments.as_ref()
+    }
 }
 impl PartialEq for Project<'_> {
     fn eq(&self, other: &Self) -> bool {
@@ -119,7 +124,7 @@ impl Ord for Project<'_> {
 }
 impl Default for Project<'_> {
     fn default() -> Self {
-        let mut id_gen = IdGenerator::default();
+        let mut id_gen = IdGenerator(10000);
         let resources = vec![1];
         Project::new(1, 1, resources, RefCell::new(Vec::new()), &mut id_gen)
     }
@@ -149,20 +154,20 @@ mod tests {
 
     #[test]
     fn generte_seg_correct_amount() {
-        let mut id_gen = IdGenerator::default();
+        let mut id_gen = IdGenerator(0);
         let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
         assert_eq!(projct.segments.len(), (3 * 4) / 2);
     }
     #[test]
     fn generate_first_seg_amount() {
-        let mut id_gen = IdGenerator::default();
+        let mut id_gen = IdGenerator(0);
         let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
         let first_segements = projct.get_first_segments();
         assert_eq!(first_segements.len(), 3);
     }
     #[test]
     fn generate_last_seg_amount() {
-        let mut id_gen = IdGenerator::default();
+        let mut id_gen = IdGenerator(0);
         let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
         let last_segments = projct.get_last_segments();
         assert_eq!(last_segments.len(), 3);
@@ -170,7 +175,7 @@ mod tests {
     #[test]
     fn link_correctly() {
         let project1 = Project::default();
-        let mut project2 = Project::default();
+        let project2 = Project::default();
         project2.add_presedence(&project1);
         project2.link_with_precedents();
         let project_2_first = project2.get_first_segments();

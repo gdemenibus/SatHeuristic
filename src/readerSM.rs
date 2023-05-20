@@ -85,7 +85,7 @@ fn create_projects(
     durations: Vec<u32>,
 ) -> Vec<&Project<'_>> {
     let mut projects: Vec<&Project> = Vec::new();
-    let mut id_gen = IdGenerator::default();
+    let mut id_gen = IdGenerator(0);
     for (resource, proj, duration) in izip!(resources, projs, durations) {
         let project = arena.alloc(Project::new(
             duration,
@@ -161,13 +161,8 @@ fn proj_creation_from_read() {
     let arena = Bump::new();
 
     let created_project = create_projects(&arena, rsr, dep, act, vec![1])[0];
-    let expected_project = Project::new(
-        1,
-        1,
-        vec![1],
-        RefCell::new(Vec::new()),
-        &mut IdGenerator::default(),
-    );
+    let expected_project =
+        Project::new(1, 1, vec![1], RefCell::new(Vec::new()), &mut IdGenerator(0));
     //simpl test
     assert_eq!(*created_project, expected_project);
 }
@@ -176,7 +171,7 @@ fn proj_creation_three() {
     // 1 -> 2 -> 3 (3 depends on 2, which depends on 1)
     // all have same resource usage, which is vec1
     let resources = vec![vec![1], vec![1], vec![1]];
-    let mut id_gen = IdGenerator::default();
+    let mut id_gen = IdGenerator(0);
     let project1 = Project::new(1, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
     let project2 = Project::new(1, 2, vec![1], RefCell::new(vec![&project1]), &mut id_gen);
     let project3 = Project::new(1, 3, vec![1], RefCell::new(vec![&project2]), &mut id_gen);

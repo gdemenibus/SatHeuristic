@@ -1,14 +1,10 @@
-pub(crate) struct IdGenerator(u64);
+#[derive()]
+pub(crate) struct IdGenerator(pub u64);
 impl IdGenerator {
     pub(crate) fn next_id(&mut self) -> u64 {
         let res = self.0;
         self.0 += 1;
         res
-    }
-}
-impl Default for IdGenerator {
-    fn default() -> Self {
-        IdGenerator(0)
     }
 }
 
