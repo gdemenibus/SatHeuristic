@@ -53,6 +53,27 @@ impl Segment {
     pub(crate) fn id(&self) -> u64 {
         self.id
     }
+    pub(crate) fn add_set_up_time(&mut self, set_up_cost: u32) {
+        let press_parents: Vec<u64> = self
+            .precedence
+            .borrow()
+            .clone()
+            .into_iter()
+            .map(|o| o.parent_project)
+            .collect();
+
+        if press_parents.contains(&self.parent_project) {
+            self.duration += set_up_cost;
+        }
+    }
+
+    pub(crate) fn precedence(&self) -> &RefCell<Vec<Rc<Segment>>> {
+        &self.precedence
+    }
+
+    pub(crate) fn duration(&self) -> u32 {
+        self.duration
+    }
 }
 impl Display for Segment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
