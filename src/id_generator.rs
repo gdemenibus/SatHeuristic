@@ -6,6 +6,12 @@ impl IdGenerator {
         self.0 += 1;
         res
     }
+    pub(crate) fn generator_for_sat() -> Self {
+        IdGenerator(1)
+    }
+    pub(crate) fn generator_for_segment() -> Self {
+        IdGenerator(0)
+    }
 }
 
 #[cfg(test)]

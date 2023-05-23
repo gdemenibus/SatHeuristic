@@ -7,6 +7,7 @@ pub mod project;
 pub mod floyd_warshall;
 mod id_generator;
 mod readerSM;
+pub mod sat_seg_var;
 mod segment;
 fn main() {
     let arena = Bump::new();
@@ -19,6 +20,6 @@ fn main() {
             //println!("{:?}", segment.id());
         }
     }
-    let distances = floyd_warshall::segments_dist__shortest_vec(&mut segments);
+    let distances = floyd_warshall::segments_dist_shortest_vec(&mut segments);
     println!("Debug distance checker: {:?}", distances)
 }

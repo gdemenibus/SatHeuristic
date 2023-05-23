@@ -4,6 +4,8 @@ use std::{
     rc::Rc,
 };
 
+use crate::{id_generator::IdGenerator, sat_seg_var::SATSVar};
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Segment {
     pub(crate) start_jiff: u32,
@@ -15,6 +17,7 @@ pub(crate) struct Segment {
     // TODO: Perhaps there is a better way to deal with this resource array
     // Investigate
     pub(crate) resource: Vec<u32>,
+    pub(crate) variables: Vec<SATSVar>,
 }
 impl Segment {
     pub(crate) fn new(
@@ -25,6 +28,7 @@ impl Segment {
         parent_project: u64,
         resource: Vec<u32>,
     ) -> Self {
+        let variables: Vec<SATSVar> = Vec::new();
         Self {
             start_jiff,
             duration,
@@ -32,6 +36,7 @@ impl Segment {
             id,
             parent_project,
             resource,
+            variables,
         }
     }
 
@@ -73,6 +78,22 @@ impl Segment {
 
     pub(crate) fn duration(&self) -> u32 {
         self.duration
+    }
+}
+impl Segment {
+    #[allow(non_snake_case)]
+    pub(crate) fn generate_SAT_vars(
+        &mut self,
+        id_gen: &mut IdGenerator,
+        early_start: u64,
+        latest_start: u64,
+    ) {
+        let mut sat_vars: Vec<SATSVar> = Vec::new();
+        for t in early_start..latest_start + 1 {
+            let sat_var = SATSVar::new(self.id(), self.duration(), t, id_gen);
+            sat_vars.push(sat_var);
+        }
+        self.variables = sat_vars;
     }
 }
 impl Display for Segment {

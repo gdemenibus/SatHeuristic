@@ -1,6 +1,7 @@
-use crate::id_generator::IdGenerator;
 use crate::segment::Segment;
+use crate::{id_generator::IdGenerator, sat_seg_var::Clause};
 use core::fmt;
+use std::borrow::Borrow;
 use std::{cell::RefCell, cmp::Ordering, fmt::Display, rc::Rc};
 #[derive(Eq, Debug)]
 pub(crate) struct Project<'a> {
@@ -105,6 +106,37 @@ impl<'a> Project<'a> {
 
     pub(crate) fn segments(&self) -> &[Rc<Segment>] {
         self.segments.as_ref()
+    }
+    pub(crate) fn generate_completion_clauses(&self) -> Vec<Clause> {
+        let mut clauses: Vec<Clause> = Vec::new();
+        for jiffy in 1..self.duration + 1 {
+            //Each jiffy will produce one mega clause
+            let mut jiffy_clause: Vec<i64> = Vec::new();
+            for segment in self.get_segments_for_jiffy(jiffy) {
+                // Get the vars representing each sement
+                assert!(
+                    !segment.variables.is_empty(),
+                    "Generate segments has not been called on segment {:?}",
+                    segment.id()
+                );
+                let var_ids: Vec<i64> = Rc::clone(&segment)
+                    .variables
+                    .iter()
+                    .map(|x| x.id() as i64)
+                    .collect();
+                jiffy_clause.extend(var_ids);
+            }
+            let clause = Clause::new(jiffy_clause);
+            clauses.push(clause);
+        }
+        clauses
+    }
+    pub(crate) fn get_segments_for_jiffy(&self, jiffy: u32) -> Vec<Rc<Segment>> {
+        self.segments
+            .iter()
+            .map(Rc::clone)
+            .filter(|s| s.start_jiff <= jiffy && s.start_jiff + s.duration >= jiffy)
+            .collect()
     }
 }
 impl PartialEq for Project<'_> {
