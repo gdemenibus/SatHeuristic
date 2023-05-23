@@ -115,12 +115,13 @@ impl<'a> Project<'a> {
             for segment in self.get_segments_for_jiffy(jiffy) {
                 // Get the vars representing each sement
                 assert!(
-                    !segment.variables.is_empty(),
+                    !segment.variables.borrow().is_empty(),
                     "Generate segments has not been called on segment {:?}",
                     segment.id()
                 );
                 let var_ids: Vec<i64> = Rc::clone(&segment)
                     .variables
+                    .borrow()
                     .iter()
                     .map(|x| x.id() as i64)
                     .collect();

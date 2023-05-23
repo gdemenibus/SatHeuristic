@@ -51,6 +51,10 @@ impl SATSVar {
     pub(crate) fn id(&self) -> u64 {
         self.id
     }
+
+    pub(crate) fn time(&self) -> u64 {
+        self.time
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -111,6 +115,6 @@ mod tests {
         segment.generate_SAT_vars(&mut id_gen, early_start, latest_start);
         let generated = segment.variables;
         let expected_amount = 3;
-        assert_eq!(expected_amount, generated.len());
+        assert_eq!(expected_amount, generated.borrow().len());
     }
 }

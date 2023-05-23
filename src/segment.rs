@@ -1,10 +1,14 @@
 use std::{
+    borrow::Borrow,
     cell::RefCell,
     fmt::{self, Display},
     rc::Rc,
 };
 
-use crate::{id_generator::IdGenerator, sat_seg_var::SATSVar};
+use crate::{
+    id_generator::IdGenerator,
+    sat_seg_var::{Clause, SATSVar},
+};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Segment {
@@ -17,7 +21,9 @@ pub(crate) struct Segment {
     // TODO: Perhaps there is a better way to deal with this resource array
     // Investigate
     pub(crate) resource: Vec<u32>,
-    pub(crate) variables: Vec<SATSVar>,
+    pub(crate) variables: RefCell<Vec<SATSVar>>,
+    pub(crate) early_start: u64,
+    pub(crate) latest_start: u64,
 }
 impl Segment {
     pub(crate) fn new(
@@ -28,7 +34,9 @@ impl Segment {
         parent_project: u64,
         resource: Vec<u32>,
     ) -> Self {
-        let variables: Vec<SATSVar> = Vec::new();
+        let variables: RefCell<Vec<SATSVar>> = RefCell::new(Vec::new());
+        let early_start = 0;
+        let latest_start = 0;
         Self {
             start_jiff,
             duration,
@@ -37,6 +45,8 @@ impl Segment {
             parent_project,
             resource,
             variables,
+            early_start,
+            latest_start,
         }
     }
 
@@ -93,7 +103,28 @@ impl Segment {
             let sat_var = SATSVar::new(self.id(), self.duration(), t, id_gen);
             sat_vars.push(sat_var);
         }
-        self.variables = sat_vars;
+        self.variables = RefCell::new(sat_vars);
+        self.latest_start = latest_start;
+        self.early_start = early_start;
+    }
+    pub(crate) fn generate_precedence_clauses(&self) -> Vec<Clause> {
+        let mut clauses: Vec<Clause> = Vec::new();
+        self.variables.borrow().into_iter().for_each(|sat_var| {
+            let mut sat_var_clause = vec![-(sat_var.id() as i64)];
+            for pred in self.precedence.borrow().iter() {
+                for pred_sat in pred
+                    .variables
+                    .borrow()
+                    .iter()
+                    .filter(|v| v.time() <= self.early_start - (pred.duration() as u64))
+                {
+                    sat_var_clause.push(pred_sat.id() as i64);
+                }
+            }
+            let clause = Clause::new(sat_var_clause);
+            clauses.push(clause);
+        });
+        clauses
     }
 }
 impl Display for Segment {
