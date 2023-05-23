@@ -2,31 +2,48 @@ use std::cmp::min;
 
 use crate::segment::Segment;
 //Ensure sorted by id
-pub(crate) fn segments_dist_shortest_vec(segments: &mut Vec<&Segment>) -> Vec<Vec<u32>> {
+pub(crate) fn segments_dist_shortest_vec(segments: &mut Vec<&Segment>) -> Vec<Vec<i32>> {
     let n = segments.len();
 
-    let mut dist: Vec<Vec<u32>> = Vec::new();
+    let mut dist: Vec<Vec<i32>> = Vec::new();
     segments.sort_by_key(|a| a.id());
     for segment in segments {
-        dist.push(segment_distance_vec(segment, n));
+        dist.push(segment_to_distance_vec(segment, n));
     }
     floyd_warshall_fast(&mut dist);
     dist
 }
 
-pub(crate) fn segment_distance_vec(segment: &Segment, n: usize) -> Vec<u32> {
-    let mut distance = vec![std::u32::MAX / 3; n];
+pub(crate) fn segment_to_distance_vec(segment: &Segment, n: usize) -> Vec<i32> {
+    let mut distance = vec![std::i32::MAX / 3; n];
     for pred in segment.precedence().borrow().clone() {
         let duration = pred.duration();
         let access_id = pred.id();
-        distance[access_id as usize] = duration;
+        distance[access_id as usize] = duration as i32;
     }
     let segment_access_id = segment.id();
     distance[segment_access_id as usize] = 0;
     distance
 }
+pub(crate) fn segments_dist_longest_vec(segments: &mut Vec<&Segment>) -> Vec<Vec<i32>> {
+    let n = segments.len();
 
-pub(crate) fn floyd_warshall_fast(dist: &mut [Vec<u32>]) {
+    let mut dist: Vec<Vec<i32>> = Vec::new();
+    segments.sort_by_key(|a| a.id());
+    for segment in segments {
+        dist.push(segment_to_distance_vec(segment, n));
+    }
+    for vec in dist {
+        for v in vec {
+            v = -v;
+        }
+    }
+
+    floyd_warshall_fast(&mut dist);
+    dist
+}
+
+pub(crate) fn floyd_warshall_fast(dist: &mut [Vec<i32>]) {
     let n = dist.len();
     for i in 0..n {
         for j in 0..n {
