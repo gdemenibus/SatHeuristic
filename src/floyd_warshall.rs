@@ -1,12 +1,11 @@
-use std::cmp::min;
+use std::{cell::RefCell, cmp::min, rc::Rc};
 
 use crate::segment::Segment;
 //Ensure sorted by id
-pub(crate) fn segments_dist_shortest_vec(segments: &mut Vec<&Segment>) -> Vec<Vec<i32>> {
+pub(crate) fn segments_dist_shortest_vec(segments: Vec<&Rc<Segment>>) -> Vec<Vec<i32>> {
     let n = segments.len();
 
     let mut dist: Vec<Vec<i32>> = Vec::new();
-    segments.sort_by_key(|a| a.id());
     for segment in segments {
         dist.push(segment_to_distance_vec(segment, n));
     }
@@ -37,11 +36,10 @@ pub(crate) fn segment_to_negative_distance_vec(segment: &Segment, n: usize) -> V
     distance
 }
 
-pub(crate) fn segments_dist_longest_vec(segments: &mut Vec<&Segment>) -> Vec<Vec<i32>> {
+pub(crate) fn segments_dist_longest_vec(segments: Vec<&Rc<Segment>>) -> Vec<Vec<i32>> {
     let n = segments.len();
 
     let mut dist: Vec<Vec<i32>> = Vec::new();
-    segments.sort_by_key(|a| a.id());
     for segment in segments {
         dist.push(segment_to_negative_distance_vec(segment, n));
     }

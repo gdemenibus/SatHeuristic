@@ -1,3 +1,4 @@
+use crate::sat_seg_var::SATSVar;
 use crate::segment::Segment;
 use crate::{id_generator::IdGenerator, sat_seg_var::Clause};
 use core::fmt;
@@ -9,7 +10,7 @@ pub(crate) struct Project<'a> {
     id: u64,
     resource: Vec<u32>,
     precedence: RefCell<Vec<&'a Project<'a>>>,
-    segments: Vec<Rc<Segment>>,
+    segments: Vec<Rc<Segment<'a>>>,
 }
 
 impl<'a> Project<'a> {
@@ -40,7 +41,7 @@ impl<'a> Project<'a> {
         id_gen: &mut IdGenerator,
         parent_resource: &Vec<u32>,
         duration: u32,
-    ) -> Vec<Rc<Segment>> {
+    ) -> Vec<Rc<Segment<'a>>> {
         let mut segments: Vec<Rc<Segment>> = Vec::new();
         //TODO: Replace this ID generation with a more distinct one
 
@@ -62,7 +63,7 @@ impl<'a> Project<'a> {
         }
         segments
     }
-    pub(crate) fn get_last_segments(&self) -> Vec<Rc<Segment>> {
+    pub(crate) fn get_last_segments(&self) -> Vec<Rc<Segment<'a>>> {
         let last_segments = self
             .segments
             .iter()
@@ -72,7 +73,7 @@ impl<'a> Project<'a> {
             .collect();
         last_segments
     }
-    pub(crate) fn get_first_segments(&self) -> Vec<Rc<Segment>> {
+    pub(crate) fn get_first_segments(&self) -> Vec<Rc<Segment<'a>>> {
         let first_segements = self
             .segments
             .iter()
@@ -104,25 +105,23 @@ impl<'a> Project<'a> {
         &self.precedence
     }
 
-    pub(crate) fn segments(&self) -> &[Rc<Segment>] {
+    pub(crate) fn segments(&self) -> &[Rc<Segment<'a>>] {
         self.segments.as_ref()
     }
-    pub(crate) fn generate_completion_clauses(&self) -> Vec<Clause> {
+    /// Generates all clauses based on all variables that are linked with this project
+    pub(crate) fn generate_completion_clauses(
+        &self,
+        variables: &'a Vec<SATSVar<'a>>,
+    ) -> Vec<Clause> {
         let mut clauses: Vec<Clause> = Vec::new();
         for jiffy in 1..self.duration + 1 {
             //Each jiffy will produce one mega clause
             let mut jiffy_clause: Vec<i64> = Vec::new();
             for segment in self.get_segments_for_jiffy(jiffy) {
                 // Get the vars representing each sement
-                assert!(
-                    !segment.variables.borrow().is_empty(),
-                    "Generate segments has not been called on segment {:?}",
-                    segment.id()
-                );
-                let var_ids: Vec<i64> = Rc::clone(&segment)
-                    .variables
-                    .borrow()
+                let var_ids: Vec<i64> = variables
                     .iter()
+                    .filter(|x| x.segment().id() == segment.id())
                     .map(|x| x.id() as i64)
                     .collect();
                 jiffy_clause.extend(var_ids);
@@ -132,7 +131,7 @@ impl<'a> Project<'a> {
         }
         clauses
     }
-    pub(crate) fn get_segments_for_jiffy(&self, jiffy: u32) -> Vec<Rc<Segment>> {
+    pub(crate) fn get_segments_for_jiffy(&self, jiffy: u32) -> Vec<Rc<Segment<'a>>> {
         self.segments
             .iter()
             .map(Rc::clone)
