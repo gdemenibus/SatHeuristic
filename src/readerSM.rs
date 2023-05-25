@@ -85,7 +85,7 @@ fn create_projects(
     durations: Vec<u32>,
 ) -> Vec<&Project<'_>> {
     let mut projects: Vec<&Project> = Vec::new();
-    let mut id_gen = IdGenerator(0);
+    let mut id_gen = IdGenerator::generator_for_segment();
     for (resource, proj, duration) in izip!(resources, projs, durations) {
         let project = arena.alloc(Project::new(
             duration,
@@ -101,6 +101,7 @@ fn create_projects(
     projects.sort();
     connect_precedence(&projects, successors);
     link_with_precedence(&projects);
+
     projects
 }
 fn connect_precedence<'a>(projects: &Vec<&'a Project<'a>>, successors: Vec<Vec<usize>>) {
@@ -157,7 +158,6 @@ fn proj_creation_from_read() {
     let rsr = vec![vec![1]];
     let act = vec![1];
     let dep: Vec<Vec<usize>> = vec![vec![]];
-
     let arena = Bump::new();
 
     let created_project = create_projects(&arena, rsr, dep, act, vec![1])[0];

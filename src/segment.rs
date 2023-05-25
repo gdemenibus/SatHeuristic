@@ -1,5 +1,4 @@
 use std::{
-    borrow::Borrow,
     cell::RefCell,
     fmt::{self, Display},
     rc::Rc,
@@ -15,7 +14,7 @@ pub(crate) struct Segment {
     pub(crate) start_jiff: u32,
     pub(crate) duration: u32,
     //TODO: Replace with HashSet to prevent duplicates
-    pub(crate) precedence: RefCell<Vec<Rc<Segment>>>,
+    pub(crate) precedence: Vec<Rc<RefCell<Segment>>>,
     pub(crate) id: u64,
     pub(crate) parent_project: u64,
     // TODO: Perhaps there is a better way to deal with this resource array
@@ -29,7 +28,7 @@ impl Segment {
     pub(crate) fn new(
         start_jiff: u32,
         duration: u32,
-        precedence: RefCell<Vec<Rc<Segment>>>,
+        precedence: Vec<Rc<RefCell<Segment>>>,
         id: u64,
         parent_project: u64,
         resource: Vec<u32>,
@@ -51,17 +50,21 @@ impl Segment {
     }
 
     /// .
-    pub(crate) fn add_precedent(&self, precedent: &Rc<Segment>) {
-        self.precedence.borrow_mut().push(Rc::clone(precedent));
+    pub(crate) fn add_precedent(&mut self, precedent: &Rc<RefCell<Segment>>) {
+        assert_ne!(self.parent_project, precedent.borrow().parent_project);
+        self.precedence.push(precedent.clone());
     }
-    pub(crate) fn add_precedents(&self, precedents: &Vec<Rc<Segment>>) {
+    pub(crate) fn add_precedents(&mut self, precedents: &Vec<Rc<RefCell<Segment>>>) {
         for precedent in precedents {
             self.add_precedent(precedent);
         }
     }
-    fn precedence_link(last: &Vec<Rc<Segment>>, first: Vec<Rc<Segment>>) {
+    pub(crate) fn precedence_link(
+        last: &Vec<Rc<RefCell<Segment>>>,
+        first: &Vec<Rc<RefCell<Segment>>>,
+    ) {
         for f in first {
-            f.add_precedents(last);
+            f.borrow_mut().add_precedents(last);
         }
     }
 
@@ -71,10 +74,8 @@ impl Segment {
     pub(crate) fn add_set_up_time(&mut self, set_up_cost: u32) {
         let press_parents: Vec<u64> = self
             .precedence
-            .borrow()
-            .clone()
-            .into_iter()
-            .map(|o| o.parent_project)
+            .iter()
+            .map(|o| o.borrow().parent_project)
             .collect();
 
         if press_parents.contains(&self.parent_project) {
@@ -82,7 +83,7 @@ impl Segment {
         }
     }
 
-    pub(crate) fn precedence(&self) -> &RefCell<Vec<Rc<Segment>>> {
+    pub(crate) fn precedence(&self) -> &Vec<Rc<RefCell<Segment>>> {
         &self.precedence
     }
 
@@ -109,14 +110,13 @@ impl Segment {
     }
     pub(crate) fn generate_precedence_clauses(&self) -> Vec<Clause> {
         let mut clauses: Vec<Clause> = Vec::new();
-        self.variables.borrow().into_iter().for_each(|sat_var| {
+        self.variables.borrow().iter().for_each(|sat_var| {
             let mut sat_var_clause = vec![-(sat_var.id() as i64)];
-            for pred in self.precedence.borrow().iter() {
-                for pred_sat in pred
-                    .variables
-                    .borrow()
-                    .iter()
-                    .filter(|v| v.time() <= self.early_start - (pred.duration() as u64))
+            for pred in self.precedence.iter() {
+                for pred_sat in
+                    pred.borrow().variables.borrow().iter().filter(|v| {
+                        v.time() <= self.early_start - (pred.borrow().duration() as u64)
+                    })
                 {
                     sat_var_clause.push(pred_sat.id() as i64);
                 }
@@ -131,15 +131,14 @@ impl Display for Segment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let press: Vec<u64> = self
             .precedence
-            .borrow()
             .clone()
             .into_iter()
-            .map(|o| o.id())
+            .map(|o| o.borrow().id())
             .collect();
         write!(
             f,
-            "Segment with ID: {} \nDuration: {}\n Resource: {:?}  \nPrecedents: {:?}\n",
-            self.id, self.duration, self.resource, press
+            "Segment with ID: {} \nParent ID: {}\nDuration: {}\n Resource: {:?}  \nPrecedents: {:?}\n",
+            self.id, self.parent_project, self.duration, self.resource, press
         )
     }
 }

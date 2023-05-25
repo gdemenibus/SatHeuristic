@@ -55,6 +55,10 @@ impl SATSVar {
     pub(crate) fn time(&self) -> u64 {
         self.time
     }
+
+    pub(crate) fn u_vars(&self) -> &[SATUVar] {
+        self.u_vars.as_ref()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -109,7 +113,7 @@ mod tests {
     #[test]
     fn clause_generation_segment() {
         let mut id_gen = IdGenerator::generator_for_sat();
-        let mut segment = Segment::new(1, 1, RefCell::new(Vec::new()), 1, 1, Vec::new());
+        let mut segment = Segment::new(1, 1, Vec::new(), 1, 1, Vec::new());
         let early_start = 1;
         let latest_start = 3;
         segment.generate_SAT_vars(&mut id_gen, early_start, latest_start);

@@ -1,7 +1,6 @@
 use crate::segment::Segment;
 use crate::{id_generator::IdGenerator, sat_seg_var::Clause};
 use core::fmt;
-use std::borrow::Borrow;
 use std::{cell::RefCell, cmp::Ordering, fmt::Display, rc::Rc};
 #[derive(Eq, Debug)]
 pub(crate) struct Project<'a> {
@@ -9,7 +8,7 @@ pub(crate) struct Project<'a> {
     id: u64,
     resource: Vec<u32>,
     precedence: RefCell<Vec<&'a Project<'a>>>,
-    segments: Vec<Rc<Segment>>,
+    segments: Vec<Rc<RefCell<Segment>>>,
 }
 
 impl<'a> Project<'a> {
@@ -40,58 +39,66 @@ impl<'a> Project<'a> {
         id_gen: &mut IdGenerator,
         parent_resource: &Vec<u32>,
         duration: u32,
-    ) -> Vec<Rc<Segment>> {
-        let mut segments: Vec<Rc<Segment>> = Vec::new();
+    ) -> Vec<Rc<RefCell<Segment>>> {
+        let mut segments: Vec<Rc<RefCell<Segment>>> = Vec::new();
         //TODO: Replace this ID generation with a more distinct one
 
+        if duration == 0 {
+            let segment = Segment::new(
+                0,
+                0,
+                Vec::new(),
+                id_gen.next_id(),
+                parent_id,
+                parent_resource.clone(),
+            );
+            segments.push(Rc::new(RefCell::new(segment)));
+        }
         for x in 1..duration + 1 {
             for y in 1..duration - x + 2 {
                 let id = id_gen.next_id();
                 // find the precednece
                 // rule is: if x + y of old equal x of new, then new depends on old
                 let precedents = segments
-                    .iter()
-                    .map(Rc::clone)
-                    .filter(|old| old.start_jiff + old.duration == x)
+                    .clone()
+                    .into_iter()
+                    .filter(|old| old.borrow().start_jiff + old.borrow().duration == x)
                     .collect();
-                // TODO: This might change. Cloning might be too expensive
                 let resource = parent_resource.clone();
-                let seg = Segment::new(x, y, RefCell::new(precedents), id, parent_id, resource);
-                segments.push(Rc::new(seg));
+                let seg = Segment::new(x, y, precedents, id, parent_id, resource);
+                let cell = RefCell::new(seg);
+                segments.push(Rc::new(cell));
             }
         }
         segments
     }
-    pub(crate) fn get_last_segments(&self) -> Vec<Rc<Segment>> {
-        let last_segments = self
-            .segments
-            .iter()
-            .map(Rc::clone)
-            .filter(|last| last.parent_project == self.id)
-            .filter(|last| last.start_jiff + last.duration == self.duration + 1)
-            .collect();
-        last_segments
+    pub(crate) fn get_last_segments(&self) -> Vec<Rc<RefCell<Segment>>> {
+        self.segments
+            .clone()
+            .into_iter()
+            .filter(|last| last.borrow().parent_project == self.id)
+            .filter(|last| {
+                last.borrow().start_jiff + last.borrow().duration == self.duration + 1
+                    || self.duration == 0
+            })
+            .collect()
     }
-    pub(crate) fn get_first_segments(&self) -> Vec<Rc<Segment>> {
-        let first_segements = self
-            .segments
-            .iter()
-            .map(Rc::clone)
-            .filter(|first| first.parent_project == self.id)
-            .filter(|first| first.start_jiff == 1)
-            .collect();
-        first_segements
+    pub(crate) fn get_first_segments(&self) -> Vec<Rc<RefCell<Segment>>> {
+        self.segments
+            .clone()
+            .into_iter()
+            .filter(|first| first.borrow().parent_project == self.id)
+            .filter(|first| first.borrow().start_jiff <= 1)
+            .collect()
     }
     pub(crate) fn link_with_precedents(&self) {
         let our = self.get_first_segments();
-        for precedent in &self.precedence.borrow().clone() {
+        for precedent in self.precedence.borrow().clone() {
             let theirs = precedent.get_last_segments();
             {
                 let last = &theirs;
                 let first = &our;
-                for f in first {
-                    f.add_precedents(last);
-                }
+                Segment::precedence_link(last, first);
             };
         }
     }
@@ -104,7 +111,7 @@ impl<'a> Project<'a> {
         &self.precedence
     }
 
-    pub(crate) fn segments(&self) -> &[Rc<Segment>] {
+    pub(crate) fn segments(&self) -> &[Rc<RefCell<Segment>>] {
         self.segments.as_ref()
     }
     pub(crate) fn generate_completion_clauses(&self) -> Vec<Clause> {
@@ -115,11 +122,12 @@ impl<'a> Project<'a> {
             for segment in self.get_segments_for_jiffy(jiffy) {
                 // Get the vars representing each sement
                 assert!(
-                    !segment.variables.borrow().is_empty(),
+                    !segment.borrow().variables.borrow().is_empty(),
                     "Generate segments has not been called on segment {:?}",
-                    segment.id()
+                    segment.borrow().id()
                 );
                 let var_ids: Vec<i64> = Rc::clone(&segment)
+                    .borrow()
                     .variables
                     .borrow()
                     .iter()
@@ -132,11 +140,14 @@ impl<'a> Project<'a> {
         }
         clauses
     }
-    pub(crate) fn get_segments_for_jiffy(&self, jiffy: u32) -> Vec<Rc<Segment>> {
+    pub(crate) fn get_segments_for_jiffy(&self, jiffy: u32) -> Vec<Rc<RefCell<Segment>>> {
         self.segments
-            .iter()
-            .map(Rc::clone)
-            .filter(|s| s.start_jiff <= jiffy && s.start_jiff + s.duration >= jiffy)
+            .clone()
+            .into_iter()
+            .filter(|s| {
+                s.borrow().start_jiff <= jiffy
+                    && s.borrow().start_jiff + s.borrow().duration >= jiffy
+            })
             .collect()
     }
 }
@@ -171,10 +182,15 @@ impl Display for Project<'_> {
             .into_iter()
             .map(|o| o.id())
             .collect();
+        let seg: Vec<u64> = self
+            .segments()
+            .iter()
+            .map(|seg| seg.borrow().id())
+            .collect();
         write!(
             f,
-            "Project with ID: {} \nDuration: {}\n Resource: {:?}  \nPrecedents: {:?}\n",
-            self.id, self.duration, self.resource, press
+            "Project with ID: {} \nDuration: {}\n Resource: {:?}  \nPrecedents: {:?}\n Segments: {:?}",
+            self.id, self.duration, self.resource, press, seg
         )
     }
 }
@@ -207,21 +223,27 @@ mod tests {
     }
     #[test]
     fn link_correctly() {
-        let project1 = Project::default();
-        let project2 = Project::default();
+        let mut id_gen = IdGenerator::generator_for_segment();
+        let project1 = Project::new(1, 1, Vec::new(), RefCell::new(Vec::new()), &mut id_gen);
+        let project2 = Project::new(1, 2, Vec::new(), RefCell::new(Vec::new()), &mut id_gen);
+
         project2.add_presedence(&project1);
         project2.link_with_precedents();
+
         let project_2_first = project2.get_first_segments();
         let project_1_last = project1.get_last_segments();
 
         for segment_2_first in &project_2_first {
             for segment_1_last in &project_1_last {
                 assert!(segment_2_first
+                    .borrow()
                     .precedence
                     .clone()
-                    .into_inner()
                     .contains(segment_1_last));
             }
+        }
+        for segment in project2.segments() {
+            println!("{}", segment.borrow());
         }
     }
 }

@@ -1,14 +1,13 @@
-use std::cmp::min;
+use std::{cell::RefCell, cmp::min, rc::Rc};
 
 use crate::segment::Segment;
 //Ensure sorted by id
-pub(crate) fn segments_dist_shortest_vec(segments: &mut Vec<&Segment>) -> Vec<Vec<i32>> {
+pub(crate) fn segments_dist_shortest_vec(segments: &Vec<Rc<RefCell<Segment>>>) -> Vec<Vec<i32>> {
     let n = segments.len();
 
     let mut dist: Vec<Vec<i32>> = Vec::new();
-    segments.sort_by_key(|a| a.id());
     for segment in segments {
-        dist.push(segment_to_distance_vec(segment, n));
+        dist.push(segment_to_distance_vec(&segment.borrow(), n));
     }
     floyd_warshall_fast(&mut dist);
     dist
@@ -16,9 +15,9 @@ pub(crate) fn segments_dist_shortest_vec(segments: &mut Vec<&Segment>) -> Vec<Ve
 
 pub(crate) fn segment_to_distance_vec(segment: &Segment, n: usize) -> Vec<i32> {
     let mut distance = vec![std::i32::MAX / 3; n];
-    for pred in segment.precedence().borrow().clone() {
-        let duration = pred.duration();
-        let access_id = pred.id();
+    for pred in segment.precedence().clone() {
+        let duration = pred.borrow().duration();
+        let access_id = pred.borrow().id();
         distance[access_id as usize] = duration as i32;
     }
     let segment_access_id = segment.id();
@@ -27,9 +26,9 @@ pub(crate) fn segment_to_distance_vec(segment: &Segment, n: usize) -> Vec<i32> {
 }
 pub(crate) fn segment_to_negative_distance_vec(segment: &Segment, n: usize) -> Vec<i32> {
     let mut distance = vec![std::i32::MAX / 3; n];
-    for pred in segment.precedence().borrow().clone() {
-        let duration = pred.duration();
-        let access_id = pred.id();
+    for pred in segment.precedence().clone() {
+        let duration = pred.borrow().duration();
+        let access_id = pred.borrow().id();
         distance[access_id as usize] = -(duration as i32);
     }
     let segment_access_id = segment.id();
@@ -37,13 +36,12 @@ pub(crate) fn segment_to_negative_distance_vec(segment: &Segment, n: usize) -> V
     distance
 }
 
-pub(crate) fn segments_dist_longest_vec(segments: &mut Vec<&Segment>) -> Vec<Vec<i32>> {
+pub(crate) fn segments_dist_longest_vec(segments: &Vec<Rc<RefCell<Segment>>>) -> Vec<Vec<i32>> {
     let n = segments.len();
 
     let mut dist: Vec<Vec<i32>> = Vec::new();
-    segments.sort_by_key(|a| a.id());
     for segment in segments {
-        dist.push(segment_to_negative_distance_vec(segment, n));
+        dist.push(segment_to_negative_distance_vec(&segment.borrow(), n));
     }
     floyd_warshall_fast(&mut dist);
     dist
