@@ -90,6 +90,19 @@ impl Clause {
         vec_1.append(vec_2);
         vec_1.to_vec()
     }
+    pub(crate) fn wite_to_string(&self) -> String {
+        self.arguments
+            .iter()
+            .map(|x| x.to_string() + " ")
+            .collect::<String>()
+            + " 0"
+    }
+    pub(crate) fn writ_list_to_string(clauses: Vec<Clause>) -> String {
+        clauses
+            .iter()
+            .map(|x| x.wite_to_string() + "\n")
+            .collect::<String>()
+    }
 }
 
 #[cfg(test)]
