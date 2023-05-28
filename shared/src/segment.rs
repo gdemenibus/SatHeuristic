@@ -10,22 +10,22 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct Segment {
-    pub(crate) start_jiff: u32,
-    pub(crate) duration: u32,
+pub struct Segment {
+    pub start_jiff: u32,
+    pub duration: u32,
     //TODO: Replace with HashSet to prevent duplicates
-    pub(crate) precedence: Vec<Rc<RefCell<Segment>>>,
-    pub(crate) id: u64,
-    pub(crate) parent_project: u64,
+    pub precedence: Vec<Rc<RefCell<Segment>>>,
+    pub id: u64,
+    pub parent_project: u64,
     // TODO: Perhaps there is a better way to deal with this resource array
     // Investigate
-    pub(crate) resource: Vec<u32>,
-    pub(crate) variables: RefCell<Vec<SATSVar>>,
-    pub(crate) early_start: u64,
-    pub(crate) latest_start: u64,
+    pub resource: Vec<u32>,
+    pub variables: RefCell<Vec<SATSVar>>,
+    pub early_start: u64,
+    pub latest_start: u64,
 }
 impl Segment {
-    pub(crate) fn new(
+    pub fn new(
         start_jiff: u32,
         duration: u32,
         precedence: Vec<Rc<RefCell<Segment>>>,
@@ -50,28 +50,25 @@ impl Segment {
     }
 
     /// .
-    pub(crate) fn add_precedent(&mut self, precedent: &Rc<RefCell<Segment>>) {
+    pub fn add_precedent(&mut self, precedent: &Rc<RefCell<Segment>>) {
         assert_ne!(self.parent_project, precedent.borrow().parent_project);
         self.precedence.push(precedent.clone());
     }
-    pub(crate) fn add_precedents(&mut self, precedents: &Vec<Rc<RefCell<Segment>>>) {
+    pub fn add_precedents(&mut self, precedents: &Vec<Rc<RefCell<Segment>>>) {
         for precedent in precedents {
             self.add_precedent(precedent);
         }
     }
-    pub(crate) fn precedence_link(
-        last: &Vec<Rc<RefCell<Segment>>>,
-        first: &Vec<Rc<RefCell<Segment>>>,
-    ) {
+    pub fn precedence_link(last: &Vec<Rc<RefCell<Segment>>>, first: &Vec<Rc<RefCell<Segment>>>) {
         for f in first {
             f.borrow_mut().add_precedents(last);
         }
     }
 
-    pub(crate) fn id(&self) -> u64 {
+    pub fn id(&self) -> u64 {
         self.id
     }
-    pub(crate) fn add_set_up_time(&mut self, set_up_cost: u32) {
+    pub fn add_set_up_time(&mut self, set_up_cost: u32) {
         let press_parents: Vec<u64> = self
             .precedence
             .iter()
@@ -83,17 +80,17 @@ impl Segment {
         }
     }
 
-    pub(crate) fn precedence(&self) -> &Vec<Rc<RefCell<Segment>>> {
+    pub fn precedence(&self) -> &Vec<Rc<RefCell<Segment>>> {
         &self.precedence
     }
 
-    pub(crate) fn duration(&self) -> u32 {
+    pub fn duration(&self) -> u32 {
         self.duration
     }
 }
 impl Segment {
     #[allow(non_snake_case)]
-    pub(crate) fn generate_SAT_vars(
+    pub fn generate_SAT_vars(
         &mut self,
         id_gen: &mut IdGenerator,
         early_start: u64,
@@ -108,7 +105,7 @@ impl Segment {
         self.latest_start = latest_start;
         self.early_start = early_start;
     }
-    pub(crate) fn generate_precedence_clauses(&self) -> Vec<Clause> {
+    pub fn generate_precedence_clauses(&self) -> Vec<Clause> {
         let mut clauses: Vec<Clause> = Vec::new();
         self.variables.borrow().iter().for_each(|sat_var| {
             let mut sat_var_clause = vec![-(sat_var.id() as i64)];

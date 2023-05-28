@@ -2,19 +2,14 @@ use std::{cell::RefCell, rc::Rc};
 
 use bumpalo::Bump;
 
-use crate::{
+use shared::{
+    floyd_warshall,
     id_generator::IdGenerator,
+    readerSM,
     sat_seg_var::{Clause, SATUVar},
     segment::Segment,
 };
 
-pub mod project;
-
-pub mod floyd_warshall;
-mod id_generator;
-mod readerSM;
-pub mod sat_seg_var;
-mod segment;
 fn main() {
     let arena = Bump::new();
     let projects = readerSM::read_input("data/datasets/j30.sm/j3010_0.sm", &arena).unwrap();

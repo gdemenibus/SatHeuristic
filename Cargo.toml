@@ -1,10 +1,10 @@
-[package]
-name = "SatHeuristic"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+	"modeling",
+	"pumpkin",
+	"shared",
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-bumpalo = "3.12.2"
-itertools = "0.10.5"
+default-members = [
+	"pumpkin",
+]

@@ -3,7 +3,7 @@ use crate::{id_generator::IdGenerator, sat_seg_var::Clause};
 use core::fmt;
 use std::{cell::RefCell, cmp::Ordering, fmt::Display, rc::Rc};
 #[derive(Eq, Debug)]
-pub(crate) struct Project<'a> {
+pub struct Project<'a> {
     duration: u32,
     id: u64,
     resource: Vec<u32>,
@@ -13,7 +13,7 @@ pub(crate) struct Project<'a> {
 
 impl<'a> Project<'a> {
     /// Creates a new [`Project`].
-    pub(crate) fn new(
+    pub fn new(
         duration: u32,
         id: u64,
         resource: Vec<u32>,
@@ -30,11 +30,11 @@ impl<'a> Project<'a> {
         }
     }
 
-    pub(crate) fn add_presedence(&self, other: &'a Project<'a>) {
+    pub fn add_presedence(&self, other: &'a Project<'a>) {
         self.precedence.borrow_mut().push(other);
     }
     /// Generates the segments of a project with the following details
-    pub(crate) fn generate_segments(
+    pub fn generate_segments(
         parent_id: u64,
         id_gen: &mut IdGenerator,
         parent_resource: &Vec<u32>,
@@ -72,7 +72,7 @@ impl<'a> Project<'a> {
         }
         segments
     }
-    pub(crate) fn get_last_segments(&self) -> Vec<Rc<RefCell<Segment>>> {
+    pub fn get_last_segments(&self) -> Vec<Rc<RefCell<Segment>>> {
         self.segments
             .clone()
             .into_iter()
@@ -83,7 +83,7 @@ impl<'a> Project<'a> {
             })
             .collect()
     }
-    pub(crate) fn get_first_segments(&self) -> Vec<Rc<RefCell<Segment>>> {
+    pub fn get_first_segments(&self) -> Vec<Rc<RefCell<Segment>>> {
         self.segments
             .clone()
             .into_iter()
@@ -91,7 +91,7 @@ impl<'a> Project<'a> {
             .filter(|first| first.borrow().start_jiff <= 1)
             .collect()
     }
-    pub(crate) fn link_with_precedents(&self) {
+    pub fn link_with_precedents(&self) {
         let our = self.get_first_segments();
         for precedent in self.precedence.borrow().clone() {
             let theirs = precedent.get_last_segments();
@@ -103,18 +103,18 @@ impl<'a> Project<'a> {
         }
     }
 
-    pub(crate) fn id(&self) -> u64 {
+    pub fn id(&self) -> u64 {
         self.id
     }
 
-    pub(crate) fn precedence(&self) -> &RefCell<Vec<&'a Project<'a>>> {
+    pub fn precedence(&self) -> &RefCell<Vec<&'a Project<'a>>> {
         &self.precedence
     }
 
-    pub(crate) fn segments(&self) -> &[Rc<RefCell<Segment>>] {
+    pub fn segments(&self) -> &[Rc<RefCell<Segment>>] {
         self.segments.as_ref()
     }
-    pub(crate) fn generate_completion_clauses(&self) -> Vec<Clause> {
+    pub fn generate_completion_clauses(&self) -> Vec<Clause> {
         let mut clauses: Vec<Clause> = Vec::new();
         for jiffy in 1..self.duration + 1 {
             //Each jiffy will produce one mega clause
@@ -140,7 +140,7 @@ impl<'a> Project<'a> {
         }
         clauses
     }
-    pub(crate) fn get_segments_for_jiffy(&self, jiffy: u32) -> Vec<Rc<RefCell<Segment>>> {
+    pub fn get_segments_for_jiffy(&self, jiffy: u32) -> Vec<Rc<RefCell<Segment>>> {
         self.segments
             .clone()
             .into_iter()

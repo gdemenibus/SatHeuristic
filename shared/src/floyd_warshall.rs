@@ -2,7 +2,7 @@ use std::{cell::RefCell, cmp::min, rc::Rc};
 
 use crate::segment::Segment;
 //Ensure sorted by id
-pub(crate) fn segments_dist_shortest_vec(segments: &Vec<Rc<RefCell<Segment>>>) -> Vec<Vec<i32>> {
+pub fn segments_dist_shortest_vec(segments: &Vec<Rc<RefCell<Segment>>>) -> Vec<Vec<i32>> {
     let n = segments.len();
 
     let mut dist: Vec<Vec<i32>> = Vec::new();
@@ -13,7 +13,7 @@ pub(crate) fn segments_dist_shortest_vec(segments: &Vec<Rc<RefCell<Segment>>>) -
     dist
 }
 
-pub(crate) fn segment_to_distance_vec(segment: &Segment, n: usize) -> Vec<i32> {
+pub fn segment_to_distance_vec(segment: &Segment, n: usize) -> Vec<i32> {
     let mut distance = vec![std::i32::MAX / 3; n];
     for pred in segment.precedence().clone() {
         let duration = pred.borrow().duration();
@@ -24,7 +24,7 @@ pub(crate) fn segment_to_distance_vec(segment: &Segment, n: usize) -> Vec<i32> {
     distance[segment_access_id as usize] = 0;
     distance
 }
-pub(crate) fn segment_to_negative_distance_vec(segment: &Segment, n: usize) -> Vec<i32> {
+pub fn segment_to_negative_distance_vec(segment: &Segment, n: usize) -> Vec<i32> {
     let mut distance = vec![std::i32::MAX / 3; n];
     for pred in segment.precedence().clone() {
         let duration = pred.borrow().duration();
@@ -36,7 +36,7 @@ pub(crate) fn segment_to_negative_distance_vec(segment: &Segment, n: usize) -> V
     distance
 }
 
-pub(crate) fn segments_dist_longest_vec(segments: &Vec<Rc<RefCell<Segment>>>) -> Vec<Vec<i32>> {
+pub fn segments_dist_longest_vec(segments: &Vec<Rc<RefCell<Segment>>>) -> Vec<Vec<i32>> {
     let n = segments.len();
 
     let mut dist: Vec<Vec<i32>> = Vec::new();
@@ -47,7 +47,7 @@ pub(crate) fn segments_dist_longest_vec(segments: &Vec<Rc<RefCell<Segment>>>) ->
     dist
 }
 
-pub(crate) fn floyd_warshall_fast(dist: &mut [Vec<i32>]) {
+pub fn floyd_warshall_fast(dist: &mut [Vec<i32>]) {
     let n = dist.len();
     for i in 0..n {
         for j in 0..n {

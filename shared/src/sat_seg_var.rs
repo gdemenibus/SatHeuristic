@@ -1,7 +1,7 @@
 use crate::id_generator::IdGenerator;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct SATSVar {
+pub struct SATSVar {
     id: u64,
     segment_id: u64,
     time: u64,
@@ -9,7 +9,7 @@ pub(crate) struct SATSVar {
 }
 
 impl SATSVar {
-    pub(crate) fn new(
+    pub fn new(
         segment_id: u64,
         segment_duration: u32,
         time: u64,
@@ -24,7 +24,7 @@ impl SATSVar {
             u_vars,
         }
     }
-    pub(crate) fn generate_u_vars(
+    pub fn generate_u_vars(
         segment_id: u64,
         segment_duration: u32,
         time: u64,
@@ -37,7 +37,7 @@ impl SATSVar {
         }
         u_vars
     }
-    pub(crate) fn generate_consistency_clause(&self) -> Vec<Clause> {
+    pub fn generate_consistency_clause(&self) -> Vec<Clause> {
         let mut clauses: Vec<Clause> = Vec::new();
         for u_var in &self.u_vars {
             let s = -(self.id as i64);
@@ -48,28 +48,28 @@ impl SATSVar {
         clauses
     }
 
-    pub(crate) fn id(&self) -> u64 {
+    pub fn id(&self) -> u64 {
         self.id
     }
 
-    pub(crate) fn time(&self) -> u64 {
+    pub fn time(&self) -> u64 {
         self.time
     }
 
-    pub(crate) fn u_vars(&self) -> &[SATUVar] {
+    pub fn u_vars(&self) -> &[SATUVar] {
         self.u_vars.as_ref()
     }
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct SATUVar {
+pub struct SATUVar {
     id: u64,
     segment_id: u64,
     jiffy: u32,
 }
 
 impl SATUVar {
-    pub(crate) fn new(id: u64, segment_id: u64, jiffy: u32) -> Self {
+    pub fn new(id: u64, segment_id: u64, jiffy: u32) -> Self {
         Self {
             id,
             segment_id,
@@ -78,26 +78,26 @@ impl SATUVar {
     }
 }
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-pub(crate) struct Clause {
+pub struct Clause {
     arguments: Vec<i64>,
 }
 
 impl Clause {
-    pub(crate) fn new(arguments: Vec<i64>) -> Self {
+    pub fn new(arguments: Vec<i64>) -> Self {
         Self { arguments }
     }
-    pub(crate) fn append_clauses(vec_1: &mut Vec<Clause>, vec_2: &mut Vec<Clause>) -> Vec<Clause> {
+    pub fn append_clauses(vec_1: &mut Vec<Clause>, vec_2: &mut Vec<Clause>) -> Vec<Clause> {
         vec_1.append(vec_2);
         vec_1.to_vec()
     }
-    pub(crate) fn wite_to_string(&self) -> String {
+    pub fn wite_to_string(&self) -> String {
         self.arguments
             .iter()
             .map(|x| x.to_string() + " ")
             .collect::<String>()
             + " 0"
     }
-    pub(crate) fn writ_list_to_string(clauses: Vec<Clause>) -> String {
+    pub fn writ_list_to_string(clauses: Vec<Clause>) -> String {
         clauses
             .iter()
             .map(|x| x.wite_to_string() + "\n")

@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 
-pub(crate) fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Vec<&'a Project<'a>>> {
+pub fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Vec<&'a Project<'a>>> {
     let file = File::open(filename).unwrap_or_else(|_| panic!("Could not read file {}", filename));
     let mut lines = BufReader::new(file).lines();
     // Corresponds to file info at top. We only care about number of jobs
