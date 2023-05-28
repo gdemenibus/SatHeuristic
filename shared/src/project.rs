@@ -140,6 +140,21 @@ impl<'a> Project<'a> {
         }
         clauses
     }
+    pub fn generate_last_project_segment(&self) -> Vec<Clause> {
+        // First rules out all projects, second rules out starting project
+        if self.duration > 0 || self.precedence().borrow().len() < 1 {
+            println!("Called Last project seg on wrong project");
+        }
+        let mut clauses: Vec<Clause> = Vec::new();
+        for segment in self.segments() {
+            for var in segment.borrow().variables.borrow().iter() {
+                let clause = Clause::new(vec![var.id() as i64]);
+                // This has to be soft clause, so there needs to be more
+                clauses.push(clause);
+            }
+        }
+        clauses
+    }
     pub fn get_segments_for_jiffy(&self, jiffy: u32) -> Vec<Rc<RefCell<Segment>>> {
         self.segments
             .clone()

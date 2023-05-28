@@ -108,18 +108,18 @@ impl Segment {
     pub fn generate_precedence_clauses(&self) -> Vec<Clause> {
         let mut clauses: Vec<Clause> = Vec::new();
         self.variables.borrow().iter().for_each(|sat_var| {
-            let mut sat_var_clause = vec![-(sat_var.id() as i64)];
-            for pred in self.precedence.iter() {
-                for pred_sat in
-                    pred.borrow().variables.borrow().iter().filter(|v| {
+            if !self.precedence().is_empty() {
+                let mut sat_var_clause = vec![-(sat_var.id() as i64)];
+                for pred in self.precedence.iter() {
+                    for pred_sat in pred.borrow().variables.borrow().iter().filter(|v| {
                         v.time() <= self.early_start - (pred.borrow().duration() as u64)
-                    })
-                {
-                    sat_var_clause.push(pred_sat.id() as i64);
+                    }) {
+                        sat_var_clause.push(pred_sat.id() as i64);
+                    }
                 }
+                let clause = Clause::new(sat_var_clause);
+                clauses.push(clause);
             }
-            let clause = Clause::new(sat_var_clause);
-            clauses.push(clause);
         });
         clauses
     }

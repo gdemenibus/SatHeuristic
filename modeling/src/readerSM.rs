@@ -1,13 +1,16 @@
-use crate::id_generator::IdGenerator;
-use crate::project::Project;
+use crate::schedule::Schedule;
 use bumpalo::Bump;
 use itertools::izip;
+use shared::id_generator::IdGenerator;
+use shared::project::Project;
 use std::cell::RefCell;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 
-pub fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Vec<&'a Project<'a>>> {
-    let file = File::open(filename).unwrap_or_else(|_| panic!("Could not read file {}", filename));
+pub fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Schedule<'a>> {
+    let file = File::open(filename).unwrap();
+    ///unwrap_or_else(|_| panic!("Could not read file {}", filename));
+    println!("Reading File {:?}", file);
     let mut lines = BufReader::new(file).lines();
     // Corresponds to file info at top. We only care about number of jobs
     skip_lines(&mut lines, 5);
@@ -69,13 +72,17 @@ pub fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Vec<&'a Proj
     let line = line_to_numbers(lines.next()?.ok()?);
     let capacity_per_renewable_resource = line.get(..n_renewable).unwrap().to_vec();
     let capacity_per_nonrenewable_resource = line.get(n_renewable..).unwrap().to_vec();
-    Some(create_projects(
-        arena,
-        resources_per_mode,
-        successors,
-        activities,
-        durations_per_mode,
-    ))
+    let schedule = Schedule::new(
+        create_projects(
+            arena,
+            resources_per_mode,
+            successors,
+            activities,
+            durations_per_mode,
+        ),
+        capacity_per_renewable_resource,
+    );
+    Some(schedule)
 }
 fn create_projects(
     arena: &Bump,
@@ -127,6 +134,7 @@ fn skip_lines(lines: &mut Lines<BufReader<File>>, n: u32) {
 }
 
 fn get_number_of_activities(line: String) -> usize {
+    println!("{}", line);
     line.split(':').nth(1).unwrap().trim().parse().unwrap()
 }
 

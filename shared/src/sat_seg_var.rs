@@ -1,3 +1,5 @@
+use std::iter::zip;
+
 use crate::id_generator::IdGenerator;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -65,15 +67,15 @@ impl SATSVar {
 pub struct SATUVar {
     id: u64,
     segment_id: u64,
-    jiffy: u32,
+    time_at: u32,
 }
 
 impl SATUVar {
-    pub fn new(id: u64, segment_id: u64, jiffy: u32) -> Self {
+    pub fn new(id: u64, segment_id: u64, time_at: u32) -> Self {
         Self {
             id,
             segment_id,
-            jiffy,
+            time_at,
         }
     }
 }
@@ -90,18 +92,32 @@ impl Clause {
         vec_1.append(vec_2);
         vec_1.to_vec()
     }
-    pub fn wite_to_string(&self) -> String {
+    pub fn wite_to_string_hard(&self) -> String {
         self.arguments
             .iter()
             .map(|x| x.to_string() + " ")
             .collect::<String>()
             + " 0"
     }
-    pub fn writ_list_to_string(clauses: Vec<Clause>) -> String {
+    pub fn write_to_string_soft(&self, weight: usize) -> String {
+        self.arguments
+            .iter()
+            .map(|x| x.to_string() + " ")
+            .collect::<String>()
+            + &weight.to_string()
+    }
+    pub fn write_list_to_string_hard(clauses: Vec<Clause>) -> String {
         clauses
             .iter()
-            .map(|x| x.wite_to_string() + "\n")
+            .map(|x| x.wite_to_string_hard() + "\n")
             .collect::<String>()
+    }
+    pub fn write_list_to_string_soft(clauses: Vec<Clause>, weights: Vec<usize>) -> String {
+        zip(clauses, weights).rfold("".to_owned(), |acc, (x, y)| {
+            let join = format!("{}{}", acc, x.write_to_string_soft(y));
+            let add_last = format!("{}{}", join, "\n".to_owned());
+            return add_last;
+        })
     }
 }
 
