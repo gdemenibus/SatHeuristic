@@ -94,7 +94,8 @@ fn read_file(file: &str) {
 
     fs::write(
         "data/test/test_file",
-        Clause::write_list_to_string_hard(clauses),
+        Clause::write_first_line(clauses.len(), counter, 10)
+            + &Clause::write_list_to_string_hard(clauses, 10),
     )
     .expect("Unable to write")
 }

@@ -98,7 +98,8 @@ impl Segment {
     ) {
         let mut sat_vars: Vec<SATSVar> = Vec::new();
         for t in early_start..latest_start + 1 {
-            let sat_var = SATSVar::new(self.id(), self.duration(), t, id_gen);
+            let resource = self.resource.clone();
+            let sat_var = SATSVar::new(self.id(), self.duration(), t, id_gen, resource);
             sat_vars.push(sat_var);
         }
         self.variables = RefCell::new(sat_vars);
