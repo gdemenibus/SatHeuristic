@@ -1,0 +1,4 @@
+max duration: 10
+
+Comes from the following command:
+find *.sm -type f -exec sed -n '/-$/,/*$/p' {} \;| awk '{print $3}' | sort -n | tail -1

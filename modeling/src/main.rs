@@ -24,7 +24,7 @@ fn main() {
     //}
     // FIle provided
     if Path::new(&path).file_name().is_some() {
-        read_file(&path);
+        read_file(&path, 4);
     } //else {
       // let paths = fs::read_dir(&path).unwrap();
       // for p in paths {
@@ -32,7 +32,7 @@ fn main() {
       //}
       //}
 }
-fn read_file(file: &str) {
+fn read_file(file: &str, set_up_time: u32) {
     let arena = Bump::new();
     println!("Reading from: {:?}", file);
     let schedule = readerSM::read_input(file, &arena).unwrap();
@@ -59,6 +59,10 @@ fn read_file(file: &str) {
     for segment in segments.iter() {
         let early_start = distances[segment.borrow().id() as usize][0].unsigned_abs() as u64;
 
+        // TODO: Find different way to change this
+        // SET UP TIME CLAUSE IS HERE!
+        segment.borrow_mut().add_set_up_time(set_up_time);
+
         segment
             .borrow_mut()
             .generate_SAT_vars(&mut id_gen, early_start, critical_path);
@@ -69,7 +73,7 @@ fn read_file(file: &str) {
             .borrow()
             .iter()
             .flat_map(|v| v.u_vars())
-            .collect::<Vec<&SATUVar>>()
+            .collect::<Vec<&Rc<SATUVar>>>()
             .len();
         for clause in segment.borrow().generate_precedence_clauses() {
             clauses.push(clause);
