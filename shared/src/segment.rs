@@ -23,6 +23,7 @@ pub struct Segment {
     pub variables: RefCell<Vec<SATSVar>>,
     pub early_start: u64,
     pub latest_start: u64,
+    pub og_duration: u32,
 }
 impl Segment {
     pub fn new(
@@ -36,6 +37,7 @@ impl Segment {
         let variables: RefCell<Vec<SATSVar>> = RefCell::new(Vec::new());
         let early_start = 0;
         let latest_start = 0;
+        let og_duration = duration;
         Self {
             start_jiff,
             duration,
@@ -46,6 +48,7 @@ impl Segment {
             variables,
             early_start,
             latest_start,
+            og_duration,
         }
     }
 
@@ -99,7 +102,14 @@ impl Segment {
         let mut sat_vars: Vec<SATSVar> = Vec::new();
         for t in early_start..latest_start + 1 {
             let resource = self.resource.clone();
-            let sat_var = SATSVar::new(self.id(), self.duration(), t, id_gen, resource);
+            let sat_var = SATSVar::new(
+                self.id(),
+                self.duration(),
+                t,
+                id_gen,
+                resource,
+                self.og_duration,
+            );
             sat_vars.push(sat_var);
         }
         self.variables = RefCell::new(sat_vars);

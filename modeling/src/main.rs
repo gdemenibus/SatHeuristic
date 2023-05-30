@@ -60,16 +60,27 @@ fn strip_ending(file_name: &str) -> &str {
 }
 fn batch_file(file: &str) {
     for set_up_time in 0..10 {
+        // this is the file name that will be created
         let destination = &[
             "data/parsed/",
+            file,
+            "/",
             &set_up_time.to_string(),
             "F",
             strip_ending(file),
+            ".wcnf",
         ]
         .concat();
         read_file(file, set_up_time, destination);
     }
 }
+fn get_sat_dir(file: &str) -> &str {
+    ""
+}
+fn create_solved_dir(file: &str) -> &str {
+    ""
+}
+
 fn read_file(file: &str, set_up_time: u32, destination: &str) {
     let arena = Bump::new();
     println!("Reading from: {:?}", file);

@@ -10,6 +10,7 @@ pub struct SATSVar {
     segment_id: u64,
     time: u64,
     u_vars: Vec<Rc<SATUVar>>,
+    weight: u32,
 }
 
 impl SATSVar {
@@ -19,6 +20,7 @@ impl SATSVar {
         time: u64,
         id_gen: &mut IdGenerator,
         resource_usage: Vec<u32>,
+        weight: u32,
     ) -> Self {
         let id = id_gen.next_id();
         let u_vars =
@@ -28,6 +30,7 @@ impl SATSVar {
             segment_id,
             time,
             u_vars,
+            weight,
         }
     }
     pub fn generate_u_vars(
@@ -177,7 +180,7 @@ mod tests {
         //only one segment, with duration 1
         let mut id_gen = IdGenerator::generator_for_sat();
         let resource = vec![1];
-        let s_var = SATSVar::new(1, 1, 1, &mut id_gen, resource);
+        let s_var = SATSVar::new(1, 1, 1, &mut id_gen, resource, 1);
         let expected_clause = Clause::new(vec![-1, 2]);
         let got_clauses = s_var.generate_consistency_clause();
         println!("{:?}", got_clauses);
