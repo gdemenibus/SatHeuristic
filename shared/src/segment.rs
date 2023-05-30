@@ -75,7 +75,7 @@ impl Segment {
             .map(|o| o.borrow().parent_project)
             .collect();
 
-        if press_parents.contains(&self.parent_project) {
+        if press_parents.contains(&self.parent_project) && self.duration() > 0 {
             self.duration += set_up_cost;
         }
     }

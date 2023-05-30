@@ -9,8 +9,7 @@ use std::io::{BufRead, BufReader, Lines};
 
 pub fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Schedule<'a>> {
     let file = File::open(filename).unwrap();
-    ///unwrap_or_else(|_| panic!("Could not read file {}", filename));
-    println!("Reading File {:?}", file);
+    //unwrap_or_else(|_| panic!("Could not read file {}", filename));
     let mut lines = BufReader::new(file).lines();
     // Corresponds to file info at top. We only care about number of jobs
     skip_lines(&mut lines, 5);
@@ -134,7 +133,6 @@ fn skip_lines(lines: &mut Lines<BufReader<File>>, n: u32) {
 }
 
 fn get_number_of_activities(line: String) -> usize {
-    println!("{}", line);
     line.split(':').nth(1).unwrap().trim().parse().unwrap()
 }
 
@@ -156,7 +154,6 @@ fn line_to_numbers(line: String) -> Vec<u32> {
 }
 
 fn get_horizon(line: String) -> usize {
-    println!("{}", line);
     line.split(':').nth(1).unwrap().trim().parse().unwrap()
 }
 #[cfg(test)]

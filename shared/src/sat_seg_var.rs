@@ -38,10 +38,16 @@ impl SATSVar {
         resource_usage: Vec<u32>,
     ) -> Vec<Rc<SATUVar>> {
         let mut u_vars: Vec<Rc<SATUVar>> = Vec::new();
-        for l in (time as u32)..(time as u32) + segment_duration {
-            let resource = resource_usage.clone();
-            let u_var = SATUVar::new(id_gen.next_id(), segment_id, l, resource);
+        if segment_duration == 0 {
+            let resource = resource_usage;
+            let u_var = SATUVar::new(id_gen.next_id(), segment_id, time as u32, resource);
             u_vars.push(Rc::new(u_var));
+        } else {
+            for l in (time as u32)..(time as u32) + segment_duration {
+                let resource = resource_usage.clone();
+                let u_var = SATUVar::new(id_gen.next_id(), segment_id, l, resource);
+                u_vars.push(Rc::new(u_var));
+            }
         }
         u_vars
     }
@@ -95,6 +101,12 @@ impl SATUVar {
 
     pub fn time_at(&self) -> u32 {
         self.time_at
+    }
+    pub fn last_to_clause(vars: &Vec<Rc<SATUVar>>) -> Vec<Clause> {
+        vars.iter().map(|u| u.to_clause()).collect()
+    }
+    pub fn to_clause(&self) -> Clause {
+        Clause::new(vec![self.id as i64])
     }
 }
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]

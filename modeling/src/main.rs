@@ -3,7 +3,13 @@ pub mod schedule;
 
 use bumpalo::Bump;
 //use clap::Parser;
-use std::{cell::RefCell, env, fs, path::Path, rc::Rc};
+use std::{
+    cell::RefCell,
+    env,
+    fs::{self, read_dir},
+    path::Path,
+    rc::Rc,
+};
 
 use shared::{
     floyd_warshall,
@@ -13,26 +19,58 @@ use shared::{
 };
 
 fn main() {
-    //let args: Vec<String> = env::args().collect();
-    //let path_string = &args[0];
-    //let mut path = String::from("");
-    // no argument will be interpreted as test
-    //if path_string.is_empty() {
-    let path = String::from("data/test/j301_0.sm");
-    //} else {
-    //    path = String::from(path_string);
-    //}
-    // FIle provided
-    if Path::new(&path).file_name().is_some() {
-        read_file(&path, 4);
-    } //else {
-      // let paths = fs::read_dir(&path).unwrap();
-      // for p in paths {
-      //     read_file(p.unwrap().path().to_str().unwrap());
-      //}
-      //}
+    let args: Vec<String> = env::args().collect();
+    // Path provided as the first argument
+    if args.len() <= 1 {
+        let path = String::from("data/test/j301_0.sm");
+        read_file(&path, 4, "data/test/test_file");
+    } else {
+        let path_string = &args[1];
+        // Turn into dir
+        let dir_check = Path::new(path_string);
+        // Single file option
+        if dir_check.is_file() {
+            batch_file(dir_check.to_str().unwrap());
+        }
+        // Entire directory given
+        else if dir_check.is_dir() {
+            let dir = read_dir(dir_check).unwrap();
+            for file in dir {
+                //read_file(file.unwrap().path().to_str().unwrap(), 4, "NO");
+                let file_path = file.unwrap().path();
+                let file_name = file_path.to_str().unwrap();
+                batch_file(file_name)
+            }
+        } else {
+            println!(
+                "Argument provided: [{:?}], but not path or directory :(",
+                path_string
+            );
+        }
+    }
 }
-fn read_file(file: &str, set_up_time: u32) {
+fn strip_ending(file_name: &str) -> &str {
+    file_name
+        .split('/')
+        .last()
+        .unwrap()
+        .split('.')
+        .next()
+        .unwrap()
+}
+fn batch_file(file: &str) {
+    for set_up_time in 0..10 {
+        let destination = &[
+            "data/parsed/",
+            &set_up_time.to_string(),
+            "F",
+            strip_ending(file),
+        ]
+        .concat();
+        read_file(file, set_up_time, destination);
+    }
+}
+fn read_file(file: &str, set_up_time: u32, destination: &str) {
     let arena = Bump::new();
     println!("Reading from: {:?}", file);
     let schedule = readerSM::read_input(file, &arena).unwrap();
@@ -59,7 +97,6 @@ fn read_file(file: &str, set_up_time: u32) {
     for segment in segments.iter() {
         let early_start = distances[segment.borrow().id() as usize][0].unsigned_abs() as u64;
 
-        // TODO: Find different way to change this
         // SET UP TIME CLAUSE IS HERE!
         segment.borrow_mut().add_set_up_time(set_up_time);
 
@@ -92,14 +129,33 @@ fn read_file(file: &str, set_up_time: u32) {
             }
         }
     }
+    // Soft clause (maxspan) generation (and the thing we measure at the end)
+    let last = schedule.projects().last().unwrap();
+    let mut uvars: Vec<Rc<SATUVar>> = Vec::new();
+    for segment in last.segments().iter() {
+        for variable in segment.borrow().variables.borrow().iter() {
+            for uvar in variable.u_vars().iter() {
+                uvars.push(Rc::clone(uvar));
+            }
+        }
+    }
+    uvars.sort_by_key(|u| u.time_at());
+    let weight = uvars.len();
+    let weights: Vec<usize> = (1..weight + 1).rev().collect();
+    let uclause = SATUVar::last_to_clause(&uvars);
 
     println!("Total Number of Vars: {:?}", counter);
-    println!("Total Number of clauses: {:?}", clauses.len());
+    println!(
+        "Total Number of clauses: {:?}",
+        clauses.len() + uclause.len()
+    );
 
+    println!("{}", destination);
     fs::write(
-        "data/test/test_file",
-        Clause::write_first_line(clauses.len(), counter, 10)
-            + &Clause::write_list_to_string_hard(clauses, 10),
+        destination,
+        Clause::write_first_line(clauses.len(), counter, weight)
+            + &Clause::write_list_to_string_hard(clauses, weight)
+            + &Clause::write_list_to_string_soft(uclause, weights),
     )
     .expect("Unable to write")
 }
