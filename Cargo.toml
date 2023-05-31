@@ -3,6 +3,7 @@ members = [
 	"modeling",
 	"pumpkin",
 	"shared",
+	"scripts/test_script",
 ]
 
 default-members = [

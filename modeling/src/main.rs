@@ -115,15 +115,11 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
             .borrow_mut()
             .generate_SAT_vars(&mut id_gen, early_start, critical_path);
         counter += segment.borrow().variables.borrow().len();
-        counter += segment
-            .borrow()
-            .variables
-            .borrow()
-            .iter()
-            .flat_map(|v| v.u_vars())
-            .collect::<Vec<&Rc<SATUVar>>>()
-            .len();
+        counter += segment.borrow().uvariables.borrow().len();
         for clause in segment.borrow().generate_precedence_clauses() {
+            clauses.push(clause);
+        }
+        for clause in segment.borrow().generate_consistency_clause() {
             clauses.push(clause);
         }
     }
@@ -132,22 +128,12 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
             clauses.push(clause);
         }
     }
-
-    for segment in segments.iter() {
-        for variable in segment.borrow().variables.borrow().iter() {
-            for clause in variable.generate_consistency_clause() {
-                clauses.push(clause);
-            }
-        }
-    }
     // Soft clause (maxspan) generation (and the thing we measure at the end)
     let last = schedule.projects().last().unwrap();
     let mut uvars: Vec<Rc<SATUVar>> = Vec::new();
     for segment in last.segments().iter() {
-        for variable in segment.borrow().variables.borrow().iter() {
-            for uvar in variable.u_vars().iter() {
-                uvars.push(Rc::clone(uvar));
-            }
+        for variable in segment.borrow().uvariables.borrow().iter() {
+            uvars.push(Rc::clone(variable));
         }
     }
     uvars.sort_by_key(|u| u.time_at());

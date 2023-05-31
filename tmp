@@ -1,0 +1,24 @@
+fn main() -> std::io::Result<()> {
+    // foo.txt is the file, at location ./foo.txt
+
+
+    let file_name = "foo.txt";
+    std::fs::create_dir_all(file_name)?;
+    let mut f = File::open("foo.txt")?;
+    // we want to genearte two dirs:
+    // Generated solutions, ./solutions_foo/
+    // Get dir from file, get string name
+    let file_name_pure = file_name.split('/').last().unwrap().split('.').next().unwrap();
+    let solutions_dir_name = ["./solutions_" , file_name_pure , "/"].concat();
+    println!("{}", solutions_dir_name);
+    // Generated files ./sat_files_foo/
+    let sat_files_name = ["./sat_files_" , file_name_pure , "/"].concat();
+    println!("{}", sat_files_name);
+    // We want to generate one file in same dir:
+    // rust encap
+    let mut data = vec![];
+    // Create generated file Dir
+    // Place it there
+    f.read_to_end(&mut data)?;
+    Ok(())
+}

@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     id_generator::IdGenerator,
-    sat_seg_var::{Clause, SATSVar},
+    sat_seg_var::{Clause, SATSVar, SATUVar},
 };
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -21,6 +21,7 @@ pub struct Segment {
     // Investigate
     pub resource: Vec<u32>,
     pub variables: RefCell<Vec<SATSVar>>,
+    pub uvariables: RefCell<Vec<Rc<SATUVar>>>,
     pub early_start: u64,
     pub latest_start: u64,
     pub og_duration: u32,
@@ -35,6 +36,7 @@ impl Segment {
         resource: Vec<u32>,
     ) -> Self {
         let variables: RefCell<Vec<SATSVar>> = RefCell::new(Vec::new());
+        let uvariables: RefCell<Vec<Rc<SATUVar>>> = RefCell::new(Vec::new());
         let early_start = 0;
         let latest_start = 0;
         let og_duration = duration;
@@ -46,6 +48,7 @@ impl Segment {
             parent_project,
             resource,
             variables,
+            uvariables,
             early_start,
             latest_start,
             og_duration,
@@ -100,6 +103,7 @@ impl Segment {
         latest_start: u64,
     ) {
         let mut sat_vars: Vec<SATSVar> = Vec::new();
+        let mut sat_u_vars: Vec<Rc<SATUVar>> = Vec::new();
         for t in early_start..latest_start + 1 {
             let resource = self.resource.clone();
             let sat_var = SATSVar::new(
@@ -112,6 +116,12 @@ impl Segment {
             );
             sat_vars.push(sat_var);
         }
+        for t in (early_start as u32)..(latest_start as u32) + 1 + self.duration() {
+            let resource = self.resource.clone();
+            let u_var = SATUVar::new(id_gen.next_id(), self.id(), t, resource);
+            sat_u_vars.push(Rc::new(u_var));
+        }
+        self.uvariables = RefCell::new(sat_u_vars);
         self.variables = RefCell::new(sat_vars);
         self.latest_start = latest_start;
         self.early_start = early_start;
@@ -132,6 +142,23 @@ impl Segment {
                 clauses.push(clause);
             }
         });
+        clauses
+    }
+
+    pub fn generate_consistency_clause(&self) -> Vec<Clause> {
+        let mut clauses: Vec<Clause> = Vec::new();
+        for s_var in self.variables.borrow().iter() {
+            for u_var in self.uvariables.borrow().iter() {
+                if u_var.time_at() as u64 >= s_var.time()
+                    && (u_var.time_at() as u64) <= s_var.time() + (self.duration() as u64)
+                {
+                    let s = -(s_var.id() as i64);
+                    let u = u_var.id() as i64;
+                    let clause = Clause::new(vec![s, u]);
+                    clauses.push(clause);
+                }
+            }
+        }
         clauses
     }
 }

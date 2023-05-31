@@ -4,12 +4,14 @@ use itertools::Itertools;
 
 use crate::id_generator::IdGenerator;
 
+use pyo3::prelude::*;
+use pyo3::types::IntoPyDict;
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SATSVar {
     id: u64,
     segment_id: u64,
     time: u64,
-    u_vars: Vec<Rc<SATUVar>>,
     weight: u32,
 }
 
@@ -23,13 +25,10 @@ impl SATSVar {
         weight: u32,
     ) -> Self {
         let id = id_gen.next_id();
-        let u_vars =
-            SATSVar::generate_u_vars(segment_id, segment_duration, time, id_gen, resource_usage);
         Self {
             id,
             segment_id,
             time,
-            u_vars,
             weight,
         }
     }
@@ -54,16 +53,6 @@ impl SATSVar {
         }
         u_vars
     }
-    pub fn generate_consistency_clause(&self) -> Vec<Clause> {
-        let mut clauses: Vec<Clause> = Vec::new();
-        for u_var in &self.u_vars {
-            let s = -(self.id as i64);
-            let u = u_var.id as i64;
-            let clause = Clause::new(vec![s, u]);
-            clauses.push(clause);
-        }
-        clauses
-    }
 
     pub fn id(&self) -> u64 {
         self.id
@@ -71,10 +60,6 @@ impl SATSVar {
 
     pub fn time(&self) -> u64 {
         self.time
-    }
-
-    pub fn u_vars(&self) -> &[Rc<SATUVar>] {
-        self.u_vars.as_ref()
     }
 }
 
@@ -110,6 +95,10 @@ impl SATUVar {
     }
     pub fn to_clause(&self) -> Clause {
         Clause::new(vec![self.id as i64])
+    }
+
+    pub fn id(&self) -> u64 {
+        self.id
     }
 }
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
@@ -165,6 +154,22 @@ impl Clause {
             + &top.to_string()
             + "\n"
     }
+    pub fn python_max() -> PyResult<()> {
+        Python::with_gil(|py| {
+            let builtins = PyModule::import(py, "builtins")?;
+            let sat = PyModule::import(py, "pysat")?;
+            let total: i32 = builtins
+                .getattr("sum")?
+                .call1((vec![1, 2, 3],))?
+                .extract()?;
+            assert_eq!(total, 6);
+            let sat_call: Vec<i64> = sat
+                .getattr("pb.PBEnc.atmost")?
+                .call1((vec![1, 2, 3],))?
+                .extract()?;
+            Ok(())
+        })
+    }
 }
 
 #[cfg(test)]
@@ -196,5 +201,11 @@ mod tests {
         let generated = segment.variables;
         let expected_amount = 3;
         assert_eq!(expected_amount, generated.borrow().len());
+    }
+    #[test]
+    fn python_in_rust() {
+        println!("{:?}", Clause::python_max());
+
+        panic!()
     }
 }
