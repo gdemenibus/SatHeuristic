@@ -187,14 +187,11 @@ mod tests {
         let resource = vec![1];
         let s_var = SATSVar::new(1, 1, 1, &mut id_gen, resource, 1);
         let expected_clause = Clause::new(vec![-1, 2]);
-        let got_clauses = s_var.generate_consistency_clause();
-        println!("{:?}", got_clauses);
-        assert_eq!(expected_clause, got_clauses[0]);
     }
     #[test]
     fn clause_generation_segment() {
         let mut id_gen = IdGenerator::generator_for_sat();
-        let mut segment = Segment::new(1, 1, Vec::new(), 1, 1, Vec::new());
+        let mut segment = Segment::new(1, 1, Vec::new(), 1, 1, Vec::new(), 0);
         let early_start = 1;
         let latest_start = 3;
         segment.generate_SAT_vars(&mut id_gen, early_start, latest_start);

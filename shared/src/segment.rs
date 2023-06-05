@@ -34,12 +34,18 @@ impl Segment {
         id: u64,
         parent_project: u64,
         resource: Vec<u32>,
+        set_up_time: u32,
     ) -> Self {
         let variables: RefCell<Vec<SATSVar>> = RefCell::new(Vec::new());
         let uvariables: RefCell<Vec<Rc<SATUVar>>> = RefCell::new(Vec::new());
         let early_start = 0;
         let latest_start = 0;
         let og_duration = duration;
+        let mut duration = duration;
+        if start_jiff == 1 && duration > 0 {
+            duration += set_up_time;
+        }
+
         Self {
             start_jiff,
             duration,
@@ -74,17 +80,17 @@ impl Segment {
     pub fn id(&self) -> u64 {
         self.id
     }
-    pub fn add_set_up_time(&mut self, set_up_cost: u32) {
-        let press_parents: Vec<u64> = self
-            .precedence
-            .iter()
-            .map(|o| o.borrow().parent_project)
-            .collect();
-
-        if press_parents.contains(&self.parent_project) && self.duration() > 0 {
-            self.duration += set_up_cost;
-        }
-    }
+    //  pub fn add_set_up_time(&mut self, set_up_cost: u32) {
+    //      let press_parents: Vec<u64> = self
+    //          .precedence
+    //          .iter()
+    //          .map(|o| o.borrow().parent_project)
+    //           .collect();
+    //
+    //        if press_parents.contains(&self.parent_project) && self.duration() > 0 {
+    //            self.duration += set_up_cost;
+    //        }
+    //    }
 
     pub fn precedence(&self) -> &Vec<Rc<RefCell<Segment>>> {
         &self.precedence

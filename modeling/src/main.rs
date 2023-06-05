@@ -63,7 +63,7 @@ fn batch_file(file: &str) {
         // this is the file name that will be created
         let destination = &[
             "data/parsed/",
-            file,
+            strip_ending(file),
             "/",
             &set_up_time.to_string(),
             "F",
@@ -71,6 +71,11 @@ fn batch_file(file: &str) {
             ".wcnf",
         ]
         .concat();
+        fs::create_dir_all(
+            Path::new(destination)
+                .parent()
+                .unwrap_or(Path::new(destination)),
+        );
         read_file(file, set_up_time, destination);
     }
 }
@@ -84,7 +89,7 @@ fn create_solved_dir(file: &str) -> &str {
 fn read_file(file: &str, set_up_time: u32, destination: &str) {
     let arena = Bump::new();
     println!("Reading from: {:?}", file);
-    let schedule = readerSM::read_input(file, &arena).unwrap();
+    let schedule = readerSM::read_input(file, &arena, set_up_time).unwrap();
 
     let mut segments: Vec<Rc<RefCell<Segment>>> = Vec::new();
     for project in schedule.projects().iter() {
@@ -94,6 +99,7 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
     }
     // sort by id
     segments.sort_by_key(|k| k.borrow().id());
+
     let distances = floyd_warshall::segments_dist_shortest_vec(&segments);
     let critical_path = floyd_warshall::segments_dist_longest_vec(&segments)
         .iter()
@@ -108,9 +114,6 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
     for segment in segments.iter() {
         let early_start = distances[segment.borrow().id() as usize][0].unsigned_abs() as u64;
 
-        // SET UP TIME CLAUSE IS HERE!
-        segment.borrow_mut().add_set_up_time(set_up_time);
-
         segment
             .borrow_mut()
             .generate_SAT_vars(&mut id_gen, early_start, critical_path);
@@ -122,7 +125,9 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
         for clause in segment.borrow().generate_consistency_clause() {
             clauses.push(clause);
         }
+        println!("{}", segment.borrow());
     }
+    // Error is being thrown here
     for project in schedule.projects().iter() {
         for clause in project.generate_completion_clauses() {
             clauses.push(clause);
@@ -155,4 +160,9 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
             + &Clause::write_list_to_string_soft(uclause, weights),
     )
     .expect("Unable to write")
+}
+#[cfg(test)]
+mod test {
+    #[test]
+    fn counterExampleFileProd() {}
 }
