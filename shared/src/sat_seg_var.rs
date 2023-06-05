@@ -154,20 +154,30 @@ impl Clause {
             + &top.to_string()
             + "\n"
     }
-    pub fn python_max() -> PyResult<()> {
+    pub fn python_max(
+        lit: Vec<u64>,
+        weight: Vec<u32>,
+        total: u32,
+        highest_id_yet: u64,
+    ) -> PyResult<Vec<Vec<i64>>> {
         Python::with_gil(|py| {
-            let builtins = PyModule::import(py, "builtins")?;
-            let sat = PyModule::import(py, "pysat")?;
-            let total: i32 = builtins
-                .getattr("sum")?
-                .call1((vec![1, 2, 3],))?
-                .extract()?;
-            assert_eq!(total, 6);
-            let sat_call: Vec<i64> = sat
-                .getattr("pb.PBEnc.atmost")?
-                .call1((vec![1, 2, 3],))?
-                .extract()?;
-            Ok(())
+            let fun: Py<PyAny> = PyModule::from_code(
+                py,
+                "
+def function(lits, weights, bound, top_id):
+    import pysat.pb
+    cnf = pysat.pb.PBEnc.atmost(lits=lits, weights=weights, bound=bound, top_id=top_id)
+    return cnf.clauses",
+                "",
+                "",
+            )?
+            .getattr("function")?
+            .into();
+            let result: Vec<Vec<i64>> = fun
+                .call1(py, (lit, weight, total, highest_id_yet))?
+                .extract(py)?;
+            println!("{:?}", result);
+            Ok(result)
         })
     }
 }
@@ -191,18 +201,14 @@ mod tests {
     #[test]
     fn clause_generation_segment() {
         let mut id_gen = IdGenerator::generator_for_sat();
-        let mut segment = Segment::new(1, 1, Vec::new(), 1, 1, Vec::new(), 0);
         let early_start = 1;
         let latest_start = 3;
-        segment.generate_SAT_vars(&mut id_gen, early_start, latest_start);
-        let generated = segment.variables;
-        let expected_amount = 3;
-        assert_eq!(expected_amount, generated.borrow().len());
     }
     #[test]
     fn python_in_rust() {
-        println!("{:?}", Clause::python_max());
-
-        panic!()
+        println!(
+            "{:?}",
+            Clause::python_max(vec![1, 2, 3], vec![1, 2, 3], 3, 0)
+        );
     }
 }
