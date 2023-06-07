@@ -10,8 +10,9 @@ use pyo3::prelude::*;
 pub struct SATSVar {
     id: u64,
     segment_id: u64,
+    segment_duration: u32,
     time: u64,
-    weight: u32,
+    weight: bool,
 }
 
 impl SATSVar {
@@ -21,12 +22,13 @@ impl SATSVar {
         time: u64,
         id_gen: &mut IdGenerator,
         resource_usage: Vec<u32>,
-        weight: u32,
+        weight: bool,
     ) -> Self {
         let id = id_gen.next_id();
         Self {
             id,
             segment_id,
+            segment_duration,
             time,
             weight,
         }
@@ -60,6 +62,24 @@ impl SATSVar {
     pub fn time(&self) -> u64 {
         self.time
     }
+
+    pub fn weight(&self) -> bool {
+        self.weight
+    }
+
+    pub fn segment_duration(&self) -> u32 {
+        self.segment_duration
+    }
+
+    pub fn id_mut(&mut self) -> &mut u64 {
+        &mut self.id
+    }
+    pub fn last_to_clause(vars: &Vec<Rc<SATSVar>>) -> Vec<Clause> {
+        vars.iter().map(|u| u.to_clause()).collect()
+    }
+    pub fn to_clause(&self) -> Clause {
+        Clause::new(vec![self.id as i64])
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -89,13 +109,6 @@ impl SATUVar {
     pub fn time_at(&self) -> u32 {
         self.time_at
     }
-    pub fn last_to_clause(vars: &Vec<Rc<SATUVar>>) -> Vec<Clause> {
-        vars.iter().map(|u| u.to_clause()).collect()
-    }
-    pub fn to_clause(&self) -> Clause {
-        Clause::new(vec![self.id as i64])
-    }
-
     pub fn id(&self) -> u64 {
         self.id
     }
@@ -244,7 +257,7 @@ mod tests {
         //only one segment, with duration 1
         let mut id_gen = IdGenerator::generator_for_sat();
         let resource = vec![1];
-        let s_var = SATSVar::new(1, 1, 1, &mut id_gen, resource, 1);
+        let s_var = SATSVar::new(1, 1, 1, &mut id_gen, resource, false);
         let expected_clause = Clause::new(vec![-1, 2]);
     }
     #[test]

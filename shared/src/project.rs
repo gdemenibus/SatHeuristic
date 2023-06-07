@@ -170,6 +170,10 @@ impl<'a> Project<'a> {
             })
             .collect()
     }
+
+    pub fn duration(&self) -> u32 {
+        self.duration
+    }
 }
 impl PartialEq for Project<'_> {
     fn eq(&self, other: &Self) -> bool {

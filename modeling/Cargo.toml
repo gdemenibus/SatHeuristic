@@ -9,3 +9,5 @@ edition = "2021"
 bumpalo = "3.12.2"
 itertools = "0.10.5"
 shared = {path="../shared/"}
+rayon = "1.7.0"
+indicatif = "0.17.5"

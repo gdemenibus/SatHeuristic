@@ -20,11 +20,12 @@ pub struct Segment {
     // TODO: Perhaps there is a better way to deal with this resource array
     // Investigate
     pub resource: Vec<u32>,
-    pub variables: RefCell<Vec<SATSVar>>,
+    pub variables: RefCell<Vec<Rc<SATSVar>>>,
     pub uvariables: RefCell<Vec<Rc<SATUVar>>>,
     pub early_start: u64,
     pub latest_start: u64,
     pub og_duration: u32,
+    pub has_set_up: bool,
 }
 impl Segment {
     pub fn new(
@@ -36,14 +37,16 @@ impl Segment {
         resource: Vec<u32>,
         set_up_time: u32,
     ) -> Self {
-        let variables: RefCell<Vec<SATSVar>> = RefCell::new(Vec::new());
+        let variables: RefCell<Vec<Rc<SATSVar>>> = RefCell::new(Vec::new());
         let uvariables: RefCell<Vec<Rc<SATUVar>>> = RefCell::new(Vec::new());
         let early_start = 0;
         let latest_start = 0;
         let og_duration = duration;
         let mut duration = duration;
+        let mut has_set_up = false;
         if start_jiff == 1 && duration > 0 {
             duration += set_up_time;
+            has_set_up = true;
         }
 
         Self {
@@ -58,6 +61,7 @@ impl Segment {
             early_start,
             latest_start,
             og_duration,
+            has_set_up,
         }
     }
 
@@ -108,7 +112,7 @@ impl Segment {
         early_start: u64,
         latest_start: u64,
     ) {
-        let mut sat_vars: Vec<SATSVar> = Vec::new();
+        let mut sat_vars: Vec<Rc<SATSVar>> = Vec::new();
         let mut sat_u_vars: Vec<Rc<SATUVar>> = Vec::new();
         for t in early_start..latest_start + 1 {
             let resource = self.resource.clone();
@@ -118,9 +122,9 @@ impl Segment {
                 t,
                 id_gen,
                 resource,
-                self.og_duration,
+                self.has_set_up,
             );
-            sat_vars.push(sat_var);
+            sat_vars.push(Rc::new(sat_var));
         }
         for t in (early_start as u32)..(latest_start as u32) + 1 + self.duration() {
             let resource = self.resource.clone();
