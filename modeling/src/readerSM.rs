@@ -7,11 +7,7 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Lines};
 
-pub fn read_input<'a>(
-    filename: &'a str,
-    arena: &'a Bump,
-    set_up_time: u32,
-) -> Option<Schedule<'a>> {
+pub fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Schedule<'a>> {
     let file = File::open(filename).unwrap();
     //unwrap_or_else(|_| panic!("Could not read file {}", filename));
     let mut lines = BufReader::new(file).lines();
@@ -82,7 +78,6 @@ pub fn read_input<'a>(
             successors,
             activities,
             durations_per_mode,
-            set_up_time,
         ),
         capacity_per_renewable_resource,
     );
@@ -94,7 +89,6 @@ fn create_projects(
     successors: Vec<Vec<usize>>,
     projs: Vec<usize>,
     durations: Vec<u32>,
-    set_up_time: u32,
 ) -> Vec<&Project<'_>> {
     let mut projects: Vec<&Project> = Vec::new();
     let mut id_gen = IdGenerator::generator_for_segment();
@@ -105,7 +99,6 @@ fn create_projects(
             resource,
             RefCell::new(Vec::new()),
             &mut id_gen,
-            set_up_time,
         ));
         projects.push(project);
     }
@@ -172,15 +165,9 @@ fn proj_creation_from_read() {
     let dep: Vec<Vec<usize>> = vec![vec![]];
     let arena = Bump::new();
 
-    let created_project = create_projects(&arena, rsr, dep, act, vec![1], 0)[0];
-    let expected_project = Project::new(
-        1,
-        1,
-        vec![1],
-        RefCell::new(Vec::new()),
-        &mut IdGenerator(0),
-        0,
-    );
+    let created_project = create_projects(&arena, rsr, dep, act, vec![1])[0];
+    let expected_project =
+        Project::new(1, 1, vec![1], RefCell::new(Vec::new()), &mut IdGenerator(0));
     //simpl test
     assert_eq!(*created_project, expected_project);
 }
@@ -190,16 +177,16 @@ fn proj_creation_three() {
     // all have same resource usage, which is vec1
     let resources = vec![vec![1], vec![1], vec![1]];
     let mut id_gen = IdGenerator(0);
-    let project1 = Project::new(1, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen, 0);
-    let project2 = Project::new(1, 2, vec![1], RefCell::new(vec![&project1]), &mut id_gen, 0);
-    let project3 = Project::new(1, 3, vec![1], RefCell::new(vec![&project2]), &mut id_gen, 0);
+    let project1 = Project::new(1, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
+    let project2 = Project::new(1, 2, vec![1], RefCell::new(vec![&project1]), &mut id_gen);
+    let project3 = Project::new(1, 3, vec![1], RefCell::new(vec![&project2]), &mut id_gen);
     let expected_projects = vec![&project1, &project2, &project3];
 
     let arena = Bump::new();
     let successors = vec![vec![2], vec![3], vec![]];
     let projs = vec![1, 2, 3];
     let durations = vec![1, 1, 1];
-    let generetad_projects = create_projects(&arena, resources, successors, projs, durations, 0);
+    let generetad_projects = create_projects(&arena, resources, successors, projs, durations);
     for generated in generetad_projects {
         assert!(expected_projects.contains(&generated));
     }

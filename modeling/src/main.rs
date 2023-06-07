@@ -5,6 +5,7 @@ use bumpalo::Bump;
 //use clap::Parser;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use rayon::prelude::*;
+use schedule::Schedule;
 use shared::{
     floyd_warshall,
     id_generator::IdGenerator,
@@ -24,7 +25,7 @@ fn main() {
     // Path provided as the first argument
     if args.len() <= 1 {
         let path = String::from("data/test/j301_0.sm");
-        read_file(&path, 4, "data/test/test_file");
+        batch_file(&path);
     } else {
         let path_string = &args[1];
         // Turn into dir
@@ -72,13 +73,16 @@ fn batch_file(file: &str) {
     if get_ending(file) != "sm" {
         return;
     }
-    for set_up_time in 0..6 {
+    let arena = Bump::new();
+    let schedule = read_file(file, &arena);
+
+    for set_up_time in -1..6 {
         // this is the file name that will be created
         let destination = &[
             "data/parsed/",
             strip_ending(file),
             "/",
-            &set_up_time.to_string(),
+            &(set_up_time + 1).to_string(),
             "F",
             strip_ending(file),
             ".wcnf",
@@ -89,7 +93,8 @@ fn batch_file(file: &str) {
                 .parent()
                 .unwrap_or(Path::new(destination)),
         );
-        read_file(file, set_up_time, destination);
+
+        write_file(&schedule, 1, destination);
     }
 }
 fn get_sat_dir(file: &str) -> &str {
@@ -98,18 +103,21 @@ fn get_sat_dir(file: &str) -> &str {
 fn create_solved_dir(file: &str) -> &str {
     ""
 }
-
-fn read_file(file: &str, set_up_time: u32, destination: &str) {
-    let arena = Bump::new();
+fn read_file<'a>(file: &'a str, arena: &'a Bump) -> Schedule<'a> {
     println!("Reading from: {:?}", file);
-    let schedule = readerSM::read_input(file, &arena, set_up_time).unwrap();
-    println!("File Read, Schedule Created");
+    let schedule = readerSM::read_input(file, arena).unwrap();
+    schedule
+}
+
+fn write_file(schedule: &Schedule, set_up_addition: u32, destination: &str) {
     let mut segments: Vec<Rc<RefCell<Segment>>> = Vec::new();
     let mut horizon = 0;
 
-    for project in schedule.projects().iter() {
+    for project in schedule.projects.iter() {
         horizon += project.duration() as u64;
         for segment in project.segments() {
+            // we are adding, and this is a side effect
+            segment.borrow_mut().add_set_up_time(set_up_addition);
             segments.push(segment.clone());
         }
     }
@@ -143,7 +151,7 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
         }
     }
 
-    for project in schedule.projects().iter() {
+    for project in schedule.projects.iter() {
         for clause in project.generate_completion_clauses() {
             clauses.push(clause);
         }
@@ -151,7 +159,7 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
     println!("Clause generation done");
     let mut u_vars: Vec<Rc<SATUVar>> = Vec::new();
     let mut s_vars: Vec<Rc<SATSVar>> = Vec::new();
-    for project in schedule.projects().iter() {
+    for project in schedule.projects.iter() {
         for segment in project.segments().iter() {
             for u_var in segment.borrow().uvariables.borrow().iter() {
                 u_vars.push(Rc::clone(u_var));
@@ -161,12 +169,14 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
             }
         }
     }
+    println!("Calling python");
     let mut resource_clauses = Clause::u_vec_accum(u_vars, &mut id_gen, schedule.resources.clone());
     clauses.append(&mut resource_clauses);
     s_vars.sort_by_key(|e| (e.weight(), e.time(), -(e.segment_duration() as i64)));
     let mut s_order: Vec<u64> = s_vars.iter().map(|s| s.id()).collect();
     // Soft clause (maxspan) generation (and the thing we measure at the end)
-    let last = schedule.projects().last().unwrap();
+    let last = schedule.projects.last().unwrap();
+    println!("Generating clauses for final variabel");
     let mut last_svars: Vec<Rc<SATSVar>> = Vec::new();
     for segment in last.segments().iter() {
         for variable in segment.borrow().variables.borrow().iter() {

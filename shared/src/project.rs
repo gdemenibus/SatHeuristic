@@ -19,9 +19,8 @@ impl<'a> Project<'a> {
         resource: Vec<u32>,
         precedence: RefCell<Vec<&'a Project<'a>>>,
         id_gen: &mut IdGenerator,
-        set_up_time: u32,
     ) -> Self {
-        let segments = Project::generate_segments(id, id_gen, &resource, duration, set_up_time);
+        let segments = Project::generate_segments(id, id_gen, &resource, duration);
         Self {
             duration,
             id,
@@ -40,7 +39,6 @@ impl<'a> Project<'a> {
         id_gen: &mut IdGenerator,
         parent_resource: &Vec<u32>,
         duration: u32,
-        set_up_time: u32,
     ) -> Vec<Rc<RefCell<Segment>>> {
         let mut segments: Vec<Rc<RefCell<Segment>>> = Vec::new();
         //TODO: Replace this ID generation with a more distinct one
@@ -53,7 +51,6 @@ impl<'a> Project<'a> {
                 id_gen.next_id(),
                 parent_id,
                 parent_resource.clone(),
-                set_up_time,
             );
             segments.push(Rc::new(RefCell::new(segment)));
         } else {
@@ -69,7 +66,7 @@ impl<'a> Project<'a> {
                         .collect();
                     let resource = parent_resource.clone();
 
-                    let seg = Segment::new(x, y, precedents, id, parent_id, resource, set_up_time);
+                    let seg = Segment::new(x, y, precedents, id, parent_id, resource);
                     let cell = RefCell::new(seg);
                     segments.push(Rc::new(cell));
                 }
@@ -194,7 +191,7 @@ impl Default for Project<'_> {
     fn default() -> Self {
         let mut id_gen = IdGenerator(10000);
         let resources = vec![1];
-        Project::new(1, 1, resources, RefCell::new(Vec::new()), &mut id_gen, 1)
+        Project::new(1, 1, resources, RefCell::new(Vec::new()), &mut id_gen)
     }
 }
 impl Display for Project<'_> {
@@ -228,28 +225,28 @@ mod tests {
     #[test]
     fn generte_seg_correct_amount() {
         let mut id_gen = IdGenerator(0);
-        let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen, 0);
+        let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
         assert_eq!(projct.segments.len(), (3 * 4) / 2);
     }
     #[test]
     fn generate_first_seg_amount() {
         let mut id_gen = IdGenerator(0);
-        let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen, 0);
+        let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
         let first_segements = projct.get_first_segments();
         assert_eq!(first_segements.len(), 3);
     }
     #[test]
     fn generate_last_seg_amount() {
         let mut id_gen = IdGenerator(0);
-        let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen, 0);
+        let projct = Project::new(3, 1, vec![1], RefCell::new(Vec::new()), &mut id_gen);
         let last_segments = projct.get_last_segments();
         assert_eq!(last_segments.len(), 3);
     }
     #[test]
     fn link_correctly() {
         let mut id_gen = IdGenerator::generator_for_segment();
-        let project1 = Project::new(1, 1, Vec::new(), RefCell::new(Vec::new()), &mut id_gen, 0);
-        let project2 = Project::new(1, 2, Vec::new(), RefCell::new(Vec::new()), &mut id_gen, 0);
+        let project1 = Project::new(1, 1, Vec::new(), RefCell::new(Vec::new()), &mut id_gen);
+        let project2 = Project::new(1, 2, Vec::new(), RefCell::new(Vec::new()), &mut id_gen);
 
         project2.add_presedence(&project1);
         project2.link_with_precedents();
