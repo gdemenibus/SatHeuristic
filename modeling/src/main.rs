@@ -110,43 +110,52 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
     let mut id_gen = IdGenerator::generator_for_sat();
 
     let mut clauses: Vec<Clause> = Vec::new();
-    let mut counter = 0;
     for segment in segments.iter() {
         let early_start = distances[segment.borrow().id() as usize][0].unsigned_abs() as u64;
 
         segment
             .borrow_mut()
             .generate_SAT_vars(&mut id_gen, early_start, critical_path);
-        counter += segment.borrow().variables.borrow().len();
-        counter += segment.borrow().uvariables.borrow().len();
         for clause in segment.borrow().generate_precedence_clauses() {
             clauses.push(clause);
         }
         for clause in segment.borrow().generate_consistency_clause() {
             clauses.push(clause);
         }
-        println!("{}", segment.borrow());
     }
-    // Error is being thrown here
+
     for project in schedule.projects().iter() {
         for clause in project.generate_completion_clauses() {
             clauses.push(clause);
         }
     }
-    // Soft clause (maxspan) generation (and the thing we measure at the end)
-    let last = schedule.projects().last().unwrap();
-    let mut uvars: Vec<Rc<SATUVar>> = Vec::new();
-    for segment in last.segments().iter() {
-        for variable in segment.borrow().uvariables.borrow().iter() {
-            uvars.push(Rc::clone(variable));
+    let mut u_vars: Vec<Rc<SATUVar>> = Vec::new();
+    for project in schedule.projects().iter() {
+        for segment in project.segments().iter() {
+            for u_var in segment.borrow().uvariables.borrow().iter() {
+                u_vars.push(Rc::clone(u_var));
+            }
         }
     }
-    uvars.sort_by_key(|u| u.time_at());
-    let weight = uvars.len();
-    let weights: Vec<usize> = (1..weight + 1).rev().collect();
-    let uclause = SATUVar::last_to_clause(&uvars);
+    let mut resource_clauses = Clause::u_vec_accum(u_vars, &mut id_gen, schedule.resources.clone());
+    clauses.append(&mut resource_clauses);
 
-    println!("Total Number of Vars: {:?}", counter);
+    // Soft clause (maxspan) generation (and the thing we measure at the end)
+    let last = schedule.projects().last().unwrap();
+    let mut last_uvars: Vec<Rc<SATUVar>> = Vec::new();
+    for segment in last.segments().iter() {
+        for variable in segment.borrow().uvariables.borrow().iter() {
+            last_uvars.push(Rc::clone(variable));
+        }
+    }
+    last_uvars.sort_by_key(|u| u.time_at());
+    let weight = last_uvars.len();
+    let min_end = distances[last.id() as usize][0].unsigned_abs() as usize;
+
+    let weights: Vec<usize> = (1 + min_end..weight + 1 + min_end).rev().collect();
+    let uclause = SATUVar::last_to_clause(&last_uvars);
+
+    println!("Total Number of Vars: {:?}", id_gen.current_asignment());
     println!(
         "Total Number of clauses: {:?}",
         clauses.len() + uclause.len()
@@ -155,7 +164,7 @@ fn read_file(file: &str, set_up_time: u32, destination: &str) {
     println!("{}", destination);
     fs::write(
         destination,
-        Clause::write_first_line(clauses.len(), counter, weight)
+        Clause::write_first_line(clauses.len(), id_gen.current_asignment() as usize, weight)
             + &Clause::write_list_to_string_hard(clauses, weight)
             + &Clause::write_list_to_string_soft(uclause, weights),
     )

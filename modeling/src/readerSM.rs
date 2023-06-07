@@ -111,7 +111,7 @@ fn create_projects(
     }
     // Ids start at 1 and vec starts at 0, so there is an ofset by one going on here
     // Projects are sorted by ids
-    //projects.sort_by_key(|a| a.id());
+    projects.sort();
     connect_precedence(&projects, successors);
     link_with_precedence(&projects);
 

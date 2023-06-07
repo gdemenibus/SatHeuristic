@@ -12,6 +12,12 @@ impl IdGenerator {
     pub fn generator_for_segment() -> Self {
         IdGenerator(0)
     }
+    pub fn current_asignment(&self) -> u64 {
+        self.0 - 1
+    }
+    pub fn new_current(&mut self, num: u64) {
+        self.0 = num + 1;
+    }
 }
 
 #[cfg(test)]

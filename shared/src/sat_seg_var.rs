@@ -5,7 +5,6 @@ use itertools::Itertools;
 use crate::id_generator::IdGenerator;
 
 use pyo3::prelude::*;
-use pyo3::types::IntoPyDict;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SATSVar {
@@ -100,6 +99,10 @@ impl SATUVar {
     pub fn id(&self) -> u64 {
         self.id
     }
+
+    pub fn resource_usage(&self) -> &[u32] {
+        self.resource_usage.as_ref()
+    }
 }
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct Clause {
@@ -176,9 +179,55 @@ def function(lits, weights, bound, top_id):
             let result: Vec<Vec<i64>> = fun
                 .call1(py, (lit, weight, total, highest_id_yet))?
                 .extract(py)?;
-            println!("{:?}", result);
             Ok(result)
         })
+    }
+    pub fn integer_vec_to_clause(list: Vec<Vec<i64>>) -> Vec<Clause> {
+        let mut output: Vec<Clause> = Vec::new();
+        for l in list.into_iter() {
+            let clause = Clause::new(l);
+            output.push(clause);
+        }
+        output
+    }
+    pub fn u_vec_accum(
+        u_vars: Vec<Rc<SATUVar>>,
+        max_current: &mut IdGenerator,
+        resources: Vec<u32>,
+    ) -> Vec<Clause> {
+        // split into times for u vars
+        let mut output: Vec<Clause> = Vec::new();
+        let split_by_time = SATUVar::linear_sum_split(&u_vars);
+        for u_time in split_by_time.iter() {
+            for (index, resource) in resources.iter().enumerate() {
+                let u_ids: Vec<u64> = u_time.iter().map(|c| c.id()).collect();
+                let u_weights: Vec<u32> = u_time.iter().map(|u| u.resource_usage[index]).collect();
+                let lits = Clause::python_max(
+                    u_ids,
+                    u_weights,
+                    *resource,
+                    max_current.current_asignment(),
+                )
+                .unwrap();
+                if !lits.is_empty() {
+                    let max_next = lits
+                        .iter()
+                        .flatten()
+                        .map(|a| a.unsigned_abs())
+                        .max()
+                        .unwrap();
+                    max_current.new_current(max_next);
+                }
+                let mut gen_clauses = Clause::integer_vec_to_clause(lits);
+                output.append(&mut gen_clauses);
+            }
+        }
+        output
+
+        // then generate for each resource
+        // add them to the return
+        //
+        // return it all
     }
 }
 

@@ -1,10 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
-use shared::project::Project;
+use shared::{id_generator::IdGenerator, project::Project};
 
 pub struct Schedule<'a> {
     projects: Vec<&'a Project<'a>>,
-    resources: Vec<u32>,
+    pub(crate) resources: Vec<u32>,
 }
 
 impl<'a> Schedule<'a> {
