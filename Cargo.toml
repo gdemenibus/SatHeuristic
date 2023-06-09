@@ -2,6 +2,7 @@
 members = [
 	"modeling",
 	"pumpkin",
+	"h_pumpkin",
 	"shared",
 	"scripts/test_script",
 ]

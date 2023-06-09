@@ -241,6 +241,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "h_pumpkin"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "env_logger",
+ "indicatif",
+ "log",
+ "rayon",
+ "shared",
+ "thiserror",
+]
+
+[[package]]
 name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

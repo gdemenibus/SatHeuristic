@@ -165,9 +165,9 @@ impl Clause {
     }
     pub fn write_first_line(clauses_amount: usize, number_var: usize, top: usize) -> String {
         "p wcnf ".to_owned()
-            + &clauses_amount.to_string()
-            + " "
             + &number_var.to_string()
+            + " "
+            + &clauses_amount.to_string()
             + " "
             + &top.to_string()
             + "\n"

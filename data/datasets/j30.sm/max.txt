@@ -1,7 +1,0 @@
-max duration: 10
-average: 5.187955729166666 over the dataset
-Max Comes from the following command:
-
-find *.sm -type f -exec sed -n '/-$/,/*$/p' {} \;| awk '{print $3}' | sort -n | tail -1
-Average comes from:
-find *.sm -type f -exec sed -n '/-$/,/*$/p' {} \;| awk '{print $3}' | jq -s add/length
