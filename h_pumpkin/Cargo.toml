@@ -1,0 +1,18 @@
+[package]
+name = "h_pumpkin"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+env_logger = "0.10.0"
+thiserror = "1.0.39"
+log = "0.4.17"
+clap = { version = "4.1.8", features = ["derive"] }
+shared = { path = "../shared" }
+rayon = "1.7.0"
+indicatif = "0.17.5"
+
+[profile.rel-with-debug]
+inherits = "release"
+debug = true
