@@ -19,16 +19,17 @@ pub fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Schedule<'a>
     skip_lines(&mut lines, 1);
     let n_renewable = get_number_of_resources(lines.next()?.ok()?);
     let n_nonrenewable = get_number_of_resources(lines.next()?.ok()?);
-    skip_lines(&mut lines, 8);
+    skip_lines(&mut lines, 7);
 
     let activities: Vec<usize> = (1..n_activities + 1).collect();
     let mut modes: Vec<usize> = Vec::new();
-    let mut modes_per_activity: Vec<Vec<usize>> = vec![Default::default(); n_activities];
+    let mut modes_per_activity: Vec<Vec<usize>> = vec![vec![1]; n_activities];
     let mut successors: Vec<Vec<usize>> = vec![Default::default(); n_activities];
 
     for i in 0..n_activities {
         let line = line_to_numbers(lines.next()?.ok()?);
-        let n_modes = *line.get(1).unwrap();
+        let mut n_modes = *line.get(1).unwrap();
+        let n_modes = 1;
         let modes_i = modes_per_activity.get_mut(i).unwrap();
         for _ in 0..n_modes {
             modes_i.push(modes.len());
@@ -154,7 +155,9 @@ fn get_number_of_resources(line: String) -> usize {
 
 fn line_to_numbers(line: String) -> Vec<u32> {
     line.split_whitespace()
-        .map(|s| s.parse().unwrap())
+        .map(|s| s.parse())
+        .filter(|s| s.is_ok())
+        .map(|s| s.unwrap())
         .collect()
 }
 
