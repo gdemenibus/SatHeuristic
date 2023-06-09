@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Directory containing the files
-directory="../data/datasets/hold_data"
+directory="../data/"
 
 # Function to process a file
 process_file() {

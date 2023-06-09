@@ -25,13 +25,13 @@ impl PropositionalVariableSelector {
 
     pub fn bump_activity(&mut self, variable: PropositionalVariable) {
         //scale the activities if the values are too large
-        let activity = self.heap.get_value(variable.index());
-        if activity + self.increment >= self.max_threshold {
-            self.heap.divide_values(self.max_threshold);
-            self.increment /= self.max_threshold;
-        }
+        //let activity = self.heap.get_value(variable.index());
+        //if activity + self.increment >= self.max_threshold {
+        //    self.heap.divide_values(self.max_threshold);
+        //    self.increment /= self.max_threshold;
+        // }
         //now perform the standard bumping
-        self.heap.increment(variable.index(), self.increment);
+        //self.heap.increment(variable.index(), self.increment);
     }
 
     pub fn restore(&mut self, variable: PropositionalVariable) {
