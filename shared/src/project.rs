@@ -4,9 +4,9 @@ use core::fmt;
 use std::{cell::RefCell, cmp::Ordering, fmt::Display, rc::Rc};
 #[derive(Eq, Debug)]
 pub struct Project<'a> {
-    duration: u32,
-    id: u64,
-    resource: Vec<u32>,
+    duration: usize,
+    id: usize,
+    resource: Vec<usize>,
     precedence: RefCell<Vec<&'a Project<'a>>>,
     segments: Vec<Rc<RefCell<Segment>>>,
 }
@@ -14,9 +14,9 @@ pub struct Project<'a> {
 impl<'a> Project<'a> {
     /// Creates a new [`Project`].
     pub fn new(
-        duration: u32,
-        id: u64,
-        resource: Vec<u32>,
+        duration: usize,
+        id: usize,
+        resource: Vec<usize>,
         precedence: RefCell<Vec<&'a Project<'a>>>,
         id_gen: &mut IdGenerator,
     ) -> Self {
@@ -35,10 +35,10 @@ impl<'a> Project<'a> {
     }
     /// Generates the segments of a project with the following details
     pub fn generate_segments(
-        parent_id: u64,
+        parent_id: usize,
         id_gen: &mut IdGenerator,
-        parent_resource: &Vec<u32>,
-        duration: u32,
+        parent_resource: &Vec<usize>,
+        duration: usize,
     ) -> Vec<Rc<RefCell<Segment>>> {
         let mut segments: Vec<Rc<RefCell<Segment>>> = Vec::new();
         //TODO: Replace this ID generation with a more distinct one
@@ -105,7 +105,7 @@ impl<'a> Project<'a> {
         }
     }
 
-    pub fn id(&self) -> u64 {
+    pub fn id(&self) -> usize {
         self.id
     }
 
@@ -157,7 +157,7 @@ impl<'a> Project<'a> {
         }
         clauses
     }
-    pub fn get_segments_for_jiffy(&self, jiffy: u32) -> Vec<Rc<RefCell<Segment>>> {
+    pub fn get_segments_for_jiffy(&self, jiffy: usize) -> Vec<Rc<RefCell<Segment>>> {
         self.segments
             .clone()
             .into_iter()
@@ -168,7 +168,7 @@ impl<'a> Project<'a> {
             .collect()
     }
 
-    pub fn duration(&self) -> u32 {
+    pub fn duration(&self) -> usize {
         self.duration
     }
 }
@@ -196,14 +196,14 @@ impl Default for Project<'_> {
 }
 impl Display for Project<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let press: Vec<u64> = self
+        let press: Vec<usize> = self
             .precedence
             .borrow()
             .clone()
             .into_iter()
             .map(|o| o.id())
             .collect();
-        let seg: Vec<u64> = self
+        let seg: Vec<usize> = self
             .segments()
             .iter()
             .map(|seg| seg.borrow().id())

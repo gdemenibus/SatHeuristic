@@ -8,20 +8,20 @@ use pyo3::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SATSVar {
-    id: u64,
-    segment_id: u64,
-    segment_duration: u32,
-    time: u64,
+    id: usize,
+    segment_id: usize,
+    segment_duration: usize,
+    time: usize,
     weight: bool,
 }
 
 impl SATSVar {
     pub fn new(
-        segment_id: u64,
-        segment_duration: u32,
-        time: u64,
+        segment_id: usize,
+        segment_duration: usize,
+        time: usize,
         id_gen: &mut IdGenerator,
-        resource_usage: Vec<u32>,
+        resource_usage: Vec<usize>,
         weight: bool,
     ) -> Self {
         let id = id_gen.next_id();
@@ -34,19 +34,19 @@ impl SATSVar {
         }
     }
     pub fn generate_u_vars(
-        segment_id: u64,
-        segment_duration: u32,
-        time: u64,
+        segment_id: usize,
+        segment_duration: usize,
+        time: usize,
         id_gen: &mut IdGenerator,
-        resource_usage: Vec<u32>,
+        resource_usage: Vec<usize>,
     ) -> Vec<Rc<SATUVar>> {
         let mut u_vars: Vec<Rc<SATUVar>> = Vec::new();
         if segment_duration == 0 {
             let resource = resource_usage;
-            let u_var = SATUVar::new(id_gen.next_id(), segment_id, time as u32, resource);
+            let u_var = SATUVar::new(id_gen.next_id(), segment_id, time as usize, resource);
             u_vars.push(Rc::new(u_var));
         } else {
-            for l in (time as u32)..(time as u32) + segment_duration {
+            for l in (time as usize)..(time as usize) + segment_duration {
                 let resource = resource_usage.clone();
                 let u_var = SATUVar::new(id_gen.next_id(), segment_id, l, resource);
                 u_vars.push(Rc::new(u_var));
@@ -55,11 +55,11 @@ impl SATSVar {
         u_vars
     }
 
-    pub fn id(&self) -> u64 {
+    pub fn id(&self) -> usize {
         self.id
     }
 
-    pub fn time(&self) -> u64 {
+    pub fn time(&self) -> usize {
         self.time
     }
 
@@ -67,11 +67,11 @@ impl SATSVar {
         self.weight
     }
 
-    pub fn segment_duration(&self) -> u32 {
+    pub fn segment_duration(&self) -> usize {
         self.segment_duration
     }
 
-    pub fn id_mut(&mut self) -> &mut u64 {
+    pub fn id_mut(&mut self) -> &mut usize {
         &mut self.id
     }
     pub fn last_to_clause(vars: &Vec<Rc<SATSVar>>) -> Vec<Clause> {
@@ -84,14 +84,14 @@ impl SATSVar {
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SATUVar {
-    id: u64,
-    segment_id: u64,
-    time_at: u32,
-    resource_usage: Vec<u32>,
+    id: usize,
+    segment_id: usize,
+    time_at: usize,
+    resource_usage: Vec<usize>,
 }
 
 impl SATUVar {
-    pub fn new(id: u64, segment_id: u64, time_at: u32, resource_usage: Vec<u32>) -> Self {
+    pub fn new(id: usize, segment_id: usize, time_at: usize, resource_usage: Vec<usize>) -> Self {
         Self {
             id,
             segment_id,
@@ -106,14 +106,14 @@ impl SATUVar {
             .collect()
     }
 
-    pub fn time_at(&self) -> u32 {
+    pub fn time_at(&self) -> usize {
         self.time_at
     }
-    pub fn id(&self) -> u64 {
+    pub fn id(&self) -> usize {
         self.id
     }
 
-    pub fn resource_usage(&self) -> &[u32] {
+    pub fn resource_usage(&self) -> &[usize] {
         self.resource_usage.as_ref()
     }
 }
@@ -149,10 +149,12 @@ impl Clause {
                 .collect::<String>()
     }
     pub fn write_list_to_string_hard(clauses: Vec<Clause>, top: usize) -> String {
-        clauses
+        let string = clauses
             .iter()
             .map(|x| x.wite_to_string_hard(top) + "\n")
-            .collect::<String>()
+            .collect::<String>();
+        drop(clauses);
+        string
     }
     pub fn write_list_to_string_soft(clauses: Vec<Clause>, weights: Vec<usize>) -> String {
         zip(clauses, weights).rfold("".to_owned(), |acc, (x, y)| {
@@ -171,10 +173,10 @@ impl Clause {
             + "\n"
     }
     pub fn python_max(
-        lit: Vec<u64>,
-        weight: Vec<u32>,
-        total: u32,
-        highest_id_yet: u64,
+        lit: Vec<usize>,
+        weight: Vec<usize>,
+        total: usize,
+        highest_id_yet: usize,
     ) -> PyResult<Vec<Vec<i64>>> {
         Python::with_gil(|py| {
             let fun: Py<PyAny> = PyModule::from_code(
@@ -206,15 +208,16 @@ def function(lits, weights, bound, top_id):
     pub fn u_vec_accum(
         u_vars: Vec<Rc<SATUVar>>,
         max_current: &mut IdGenerator,
-        resources: Vec<u32>,
+        resources: Vec<usize>,
     ) -> Vec<Clause> {
         // split into times for u vars
         let mut output: Vec<Clause> = Vec::new();
         let split_by_time = SATUVar::linear_sum_split(&u_vars);
         for u_time in split_by_time.iter() {
             for (index, resource) in resources.iter().enumerate() {
-                let u_ids: Vec<u64> = u_time.iter().map(|c| c.id()).collect();
-                let u_weights: Vec<u32> = u_time.iter().map(|u| u.resource_usage[index]).collect();
+                let u_ids: Vec<usize> = u_time.iter().map(|c| c.id()).collect();
+                let u_weights: Vec<usize> =
+                    u_time.iter().map(|u| u.resource_usage[index]).collect();
                 let lits = Clause::python_max(
                     u_ids,
                     u_weights,
@@ -229,7 +232,7 @@ def function(lits, weights, bound, top_id):
                         .map(|a| a.unsigned_abs())
                         .max()
                         .unwrap();
-                    max_current.new_current(max_next);
+                    max_current.new_current(max_next as usize);
                 }
                 let mut gen_clauses = Clause::integer_vec_to_clause(lits);
                 output.append(&mut gen_clauses);

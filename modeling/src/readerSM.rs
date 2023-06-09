@@ -42,8 +42,8 @@ pub fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Schedule<'a>
         }
     }
 
-    let mut durations_per_mode: Vec<u32> = Vec::with_capacity(modes.len());
-    let mut resources_per_mode: Vec<Vec<u32>> =
+    let mut durations_per_mode: Vec<usize> = Vec::with_capacity(modes.len());
+    let mut resources_per_mode: Vec<Vec<usize>> =
         vec![vec![Default::default(); n_renewable + n_nonrenewable]; modes.len()];
 
     skip_lines(&mut lines, 4);
@@ -52,24 +52,29 @@ pub fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Schedule<'a>
         durations_per_mode.push(
             *line
                 .get(line.len() - (n_renewable + n_nonrenewable + 1))
-                .unwrap(),
+                .unwrap() as usize,
         );
         let resources_mode = resources_per_mode.get_mut(mode).unwrap();
         (0..n_renewable).for_each(|i| {
             resources_mode[i] = *line
                 .get(line.len() + i - n_nonrenewable - n_renewable)
-                .unwrap();
+                .unwrap() as usize;
         });
         (n_renewable..(n_renewable + n_nonrenewable)).for_each(|i| {
             resources_mode[i] = *line
                 .get(line.len() + i - n_nonrenewable - n_renewable)
-                .unwrap();
+                .unwrap() as usize;
         });
     }
 
     skip_lines(&mut lines, 3);
     let line = line_to_numbers(lines.next()?.ok()?);
-    let capacity_per_renewable_resource = line.get(..n_renewable).unwrap().to_vec();
+    let capacity_per_renewable_resource: Vec<usize> = line
+        .get(..n_renewable)
+        .unwrap()
+        .iter()
+        .map(|x| *x as usize)
+        .collect();
     let capacity_per_nonrenewable_resource = line.get(n_renewable..).unwrap().to_vec();
     let schedule = Schedule::new(
         create_projects(
@@ -85,17 +90,17 @@ pub fn read_input<'a>(filename: &'a str, arena: &'a Bump) -> Option<Schedule<'a>
 }
 fn create_projects(
     arena: &Bump,
-    resources: Vec<Vec<u32>>,
+    resources: Vec<Vec<usize>>,
     successors: Vec<Vec<usize>>,
     projs: Vec<usize>,
-    durations: Vec<u32>,
+    durations: Vec<usize>,
 ) -> Vec<&Project<'_>> {
     let mut projects: Vec<&Project> = Vec::new();
     let mut id_gen = IdGenerator::generator_for_segment();
     for (resource, proj, duration) in izip!(resources, projs, durations) {
         let project = arena.alloc(Project::new(
             duration,
-            proj as u64,
+            proj,
             resource,
             RefCell::new(Vec::new()),
             &mut id_gen,

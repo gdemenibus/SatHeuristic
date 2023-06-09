@@ -1,7 +1,7 @@
 #[derive()]
-pub struct IdGenerator(pub u64);
+pub struct IdGenerator(pub usize);
 impl IdGenerator {
-    pub fn next_id(&mut self) -> u64 {
+    pub fn next_id(&mut self) -> usize {
         let res = self.0;
         self.0 += 1;
         res
@@ -12,10 +12,10 @@ impl IdGenerator {
     pub fn generator_for_segment() -> Self {
         IdGenerator(0)
     }
-    pub fn current_asignment(&self) -> u64 {
+    pub fn current_asignment(&self) -> usize {
         self.0 - 1
     }
-    pub fn new_current(&mut self, num: u64) {
+    pub fn new_current(&mut self, num: usize) {
         self.0 = num + 1;
     }
 }
