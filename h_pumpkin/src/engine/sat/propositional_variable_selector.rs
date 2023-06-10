@@ -18,20 +18,22 @@ impl PropositionalVariableSelector {
         }
     }
 
-    pub fn reset(&mut self, random_seed: i64) {
-        self.heap.reset(random_seed);
-        self.increment = 1.0;
+    pub fn reset(&mut self, order: &Vec<u32>) {
+        let vec_len = order.len();
+        for (positon, id) in order.iter().enumerate() {
+            self.heap.increment(*id, (vec_len - positon) as f64);
+        }
     }
 
     pub fn bump_activity(&mut self, variable: PropositionalVariable) {
         //scale the activities if the values are too large
-        let activity = self.heap.get_value(variable.index());
-        if activity + self.increment >= self.max_threshold {
-            self.heap.divide_values(self.max_threshold);
-            self.increment /= self.max_threshold;
-        }
+        //  let activity = self.heap.get_value(variable.index());
+        // if activity + self.increment >= self.max_threshold {
+        //      self.heap.divide_values(self.max_threshold);
+        //      self.increment /= self.max_threshold;
+        //  }
         //now perform the standard bumping
-        self.heap.increment(variable.index(), self.increment);
+        //  self.heap.increment(variable.index(), self.increment);
     }
 
     pub fn restore(&mut self, variable: PropositionalVariable) {

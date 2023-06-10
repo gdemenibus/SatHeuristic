@@ -91,15 +91,15 @@ pub fn parse_wcnf(
 
     //skip comments
     //  comments are lines that star with 'c'
-    let _heuristic_order: Vec<u64> = file_contents
+    let heuristic_order: Vec<u32> = file_contents
         .lines()
         .next()
         .unwrap()
         .split(' ')
-        .filter(|s| !s.is_empty() && s.parse::<u64>().is_ok())
-        .map(|s| s.parse::<u64>().unwrap())
+        .filter(|s| !s.is_empty() && s.parse::<u32>().is_ok())
+        .map(|s| s.parse::<u32>().unwrap())
         .collect();
-
+    csp_solver.set_heuristic(heuristic_order);
     let mut lines = file_contents.lines().filter(|line| !line.starts_with('c'));
 
     //read the header line

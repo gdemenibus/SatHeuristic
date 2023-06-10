@@ -27,6 +27,7 @@ pub struct ConstraintSatisfactionSolver {
     counters: Counters,
     internal_parameters: SatisfactionSolverOptions,
     stopwatch: Stopwatch,
+    heuristic: Vec<u32>,
 }
 
 pub struct SatisfactionSolverOptions {
@@ -52,6 +53,7 @@ impl ConstraintSatisfactionSolver {
             counters: Counters::new(solver_options.conflicts_per_restart),
             internal_parameters: solver_options,
             stopwatch: Stopwatch::new(i64::MAX),
+            heuristic: Vec::new(),
         };
 
         //we introduce a dummy variable set to true at the root level
@@ -102,11 +104,11 @@ impl ConstraintSatisfactionSolver {
         self.solve_under_assumptions(&dummy_assumptions, time_limit_in_seconds)
     }
 
-    pub fn reset_variable_selection(&mut self, random_seed: i64) {
+    pub fn reset_variable_selection(&mut self, _random_seed: i64) {
         pumpkin_assert_simple!(self.state.is_ready());
         self.sat_data_structures
             .propositional_variable_selector
-            .reset(random_seed);
+            .reset(&self.heuristic);
     }
 
     pub fn get_state(&self) -> &CSPSolverState {
@@ -190,6 +192,10 @@ impl ConstraintSatisfactionSolver {
 
         self.backtrack(0);
         self.state.declare_ready();
+    }
+
+    pub fn set_heuristic(&mut self, heuristic: Vec<u32>) {
+        self.heuristic = heuristic;
     }
 }
 
